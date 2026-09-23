@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Azure.Core;
@@ -226,8 +227,7 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
             ExcludeInteractiveBrowserCredential = true,
             ExcludeVisualStudioCredential = true,
             ExcludeVisualStudioCodeCredential = true,
-            ExcludeAzurePowerShellCredential = true,
-            ExcludeSharedTokenCacheCredential = true
+            ExcludeAzurePowerShellCredential = true
         });
     }
 }
