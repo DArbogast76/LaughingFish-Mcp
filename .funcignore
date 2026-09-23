@@ -1,0 +1,8 @@
+.git*
+.vscode
+.idea
+local.settings.json
+*.md
+.__azurite*
+.test*
+.github

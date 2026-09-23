@@ -1,0 +1,27 @@
+{
+  "version": "2.0",
+  "telemetryMode": "OpenTelemetry",
+  "functionTimeout": "00:02:00",
+  "extensions": {
+    "mcp": {
+      "serverName": "LaughingFish-Mcp",
+      "serverVersion": "0.1.0",
+      "instructions": "LaughingFish MCP server. Use server_health to verify the host. Do not invent water temperatures, forecasts, or solar times. Do not expose NOAA station names or station IDs to the user. Location tools will accept place names, slugs, or coordinates in a later slice."
+    }
+  },
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request"
+      }
+    },
+    "logLevel": {
+      "default": "Information",
+      "Function": "Information",
+      "LaughingFish.Mcp": "Information",
+      "Microsoft": "Warning",
+      "Azure.Core": "Warning"
+    }
+  }
+}

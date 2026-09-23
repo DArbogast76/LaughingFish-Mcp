@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "LaughingFish_Mcp": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7159",
+      "launchBrowser": false
+    }
+  }
+}
