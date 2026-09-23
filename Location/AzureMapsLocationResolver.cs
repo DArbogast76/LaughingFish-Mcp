@@ -20,7 +20,7 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
     private readonly HttpClient _http;
     private readonly McpOptions _options;
     private readonly ILogger<AzureMapsLocationResolver> _logger;
-    private readonly DefaultAzureCredential _credential = new();
+    private readonly TokenCredential _credential = CreateCredential();
 
     public AzureMapsLocationResolver(
         HttpClient http,
@@ -30,7 +30,7 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
         _http = http;
         _options = options.Value;
         _logger = logger;
-        _http.Timeout = TimeSpan.FromSeconds(15);
+        _http.Timeout = TimeSpan.FromSeconds(20);
         _http.DefaultRequestHeaders.UserAgent.Clear();
         _http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("LaughingFish-Mcp", "0.3"));
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -58,19 +58,25 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
         }
 
         AccessToken token;
+        var tokenStarted = Stopwatch.StartNew();
         try
         {
             token = await _credential.GetTokenAsync(MapsTokenContext, cancellationToken).ConfigureAwait(false);
+            _logger.LogInformation(
+                "Location resolver token acquired. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
+                invocationId,
+                tokenStarted.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(
                 ex,
-                "Location resolver token failure. InvocationId={InvocationId}",
-                invocationId);
+                "Location resolver token failure. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
+                invocationId,
+                tokenStarted.ElapsedMilliseconds);
             throw new LocationResolutionException(
                 "maps_token_failed",
-                "Could not acquire an Azure Maps token. Locally run az login; in Azure the Function MI needs Azure Maps Data Reader.");
+                "Could not acquire an Azure Maps token. In Azure the Function managed identity needs Azure Maps Data Reader.");
         }
 
         var url = $"{AtlasHost}{GeocodePath}?api-version={ApiVersion}&query={Uri.EscapeDataString(trimmed)}";
@@ -206,5 +212,22 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
         }
 
         return ReadString(node, child);
+    }
+
+    private static TokenCredential CreateCredential()
+    {
+        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IDENTITY_ENDPOINT")))
+        {
+            return new ManagedIdentityCredential();
+        }
+
+        return new DefaultAzureCredential(new DefaultAzureCredentialOptions
+        {
+            ExcludeInteractiveBrowserCredential = true,
+            ExcludeVisualStudioCredential = true,
+            ExcludeVisualStudioCodeCredential = true,
+            ExcludeAzurePowerShellCredential = true,
+            ExcludeSharedTokenCacheCredential = true
+        });
     }
 }
