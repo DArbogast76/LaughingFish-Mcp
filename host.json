@@ -5,8 +5,8 @@
   "extensions": {
     "mcp": {
       "serverName": "LaughingFish-Mcp",
-      "serverVersion": "0.2.0",
-      "instructions": "LaughingFish MCP server. Use server_health to verify the host. Use get_sunrise_sunset for solar times from latitude and longitude. Do not invent water temperatures, forecasts, or solar times. Do not expose NOAA station names or station IDs to the user. Place-name geocoding is not in this slice."
+      "serverVersion": "0.3.0",
+      "instructions": "LaughingFish MCP server. Use server_health to verify the host. Use resolve_location to turn a place name into coordinates. Use get_sunrise_sunset with a place (preferred) or latitude and longitude. Convert relative dates such as this Saturday to yyyy-MM-dd before calling. Do not invent water temperatures, forecasts, solar times, or coordinates. Do not expose NOAA station names or station IDs to the user."
     }
   },
   "logging": {

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.Json;
 using LaughingFish.Mcp.Clients;
 using LaughingFish.Mcp.Configuration;
+using LaughingFish.Mcp.Location;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Mcp;
 using Microsoft.Extensions.Logging;
@@ -11,46 +12,51 @@ using Microsoft.Extensions.Options;
 namespace LaughingFish.Mcp.Functions;
 
 /// <summary>
-/// Proxies lat/lon solar times from the SunriseSunset API.
-/// Does not call Redis, Maps, WaterTemp, or Weather.
+/// Proxies solar times from the SunriseSunset API.
+/// Place names go through ILocationResolver (Azure Maps) so other tools can reuse the same path.
 /// </summary>
 public sealed class GetSunriseSunsetTool
 {
     public const string ToolName = "get_sunrise_sunset";
     public const string ToolDescription =
-        "Returns sunrise, sunset, and related solar events for a latitude and longitude. Optional date (yyyy-MM-dd, UTC today if omitted) and optional IANA time zone. Does not geocode place names. Does not invent times when the API fails.";
+        "Returns sunrise, sunset, and related solar events. Pass place (city or address) or latitude+longitude. Convert relative dates such as 'this Saturday' to yyyy-MM-dd before calling. Optional IANA time zone. Does not invent times when Maps or the API fails.";
 
     private readonly ILogger<GetSunriseSunsetTool> _logger;
     private readonly ISunriseSunsetApiClient _client;
+    private readonly ILocationResolver _locations;
     private readonly McpOptions _options;
 
     public GetSunriseSunsetTool(
         ILogger<GetSunriseSunsetTool> logger,
         ISunriseSunsetApiClient client,
+        ILocationResolver locations,
         IOptions<McpOptions> options)
     {
         _logger = logger;
         _client = client;
+        _locations = locations;
         _options = options.Value;
     }
 
     [Function(nameof(GetSunriseSunsetTool))]
     public async Task<object> Run(
         [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
-        [McpToolProperty("latitude", "Latitude in decimal degrees, -90 to 90.", true)] double latitude,
-        [McpToolProperty("longitude", "Longitude in decimal degrees, -180 to 180.", true)] double longitude,
-        [McpToolProperty("date", "Calendar date yyyy-MM-dd. Defaults to today's UTC date.", false)] string? date,
-        [McpToolProperty("timeZone", "Optional IANA or Windows time zone id, for example America/New_York.", false)] string? timeZone,
+        [McpToolProperty("place", "Place name, city, or address. Example: Anchorage, Alaska. Preferred over raw coordinates.", false)] string? place,
+        [McpToolProperty("latitude", "Latitude in decimal degrees when place is not provided.", false)] double? latitude,
+        [McpToolProperty("longitude", "Longitude in decimal degrees when place is not provided.", false)] double? longitude,
+        [McpToolProperty("date", "Calendar date yyyy-MM-dd. Convert 'this Saturday' to that format. Defaults to today's UTC date.", false)] string? date,
+        [McpToolProperty("timeZone", "Optional IANA or Windows time zone id, for example America/Anchorage.", false)] string? timeZone,
         FunctionContext functionContext)
     {
         var started = Stopwatch.StartNew();
         var invocationId = functionContext.InvocationId;
 
         _logger.LogInformation(
-            "GetSunriseSunset tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Lat={Lat} Lon={Lon} Date={Date} TimeZone={TimeZone}",
+            "GetSunriseSunset tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Date={Date} TimeZone={TimeZone}",
             invocationId,
             context.Name,
             context.SessionId,
+            place,
             latitude,
             longitude,
             date,
@@ -58,15 +64,51 @@ public sealed class GetSunriseSunsetTool
 
         try
         {
-            if (latitude is < -90 or > 90 || longitude is < -180 or > 180
-                || double.IsNaN(latitude) || double.IsNaN(longitude)
-                || double.IsInfinity(latitude) || double.IsInfinity(longitude))
+            double lat;
+            double lon;
+            object? locationPayload = null;
+
+            if (!string.IsNullOrWhiteSpace(place))
             {
-                _logger.LogInformation(
-                    "GetSunriseSunset tool rejected coordinates. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
-                    invocationId,
-                    started.ElapsedMilliseconds);
-                return Error("invalid_coordinates", "latitude must be -90 to 90 and longitude must be -180 to 180.", invocationId);
+                try
+                {
+                    var resolved = await _locations.ResolveAsync(place, invocationId, functionContext.CancellationToken)
+                        .ConfigureAwait(false);
+                    lat = resolved.Latitude;
+                    lon = resolved.Longitude;
+                    locationPayload = ResolveLocationTool.ToPayload(resolved);
+                }
+                catch (LocationResolutionException ex)
+                {
+                    _logger.LogInformation(
+                        "GetSunriseSunset tool location failed. InvocationId={InvocationId} Error={Error} ElapsedMs={ElapsedMs}",
+                        invocationId,
+                        ex.ErrorCode,
+                        started.ElapsedMilliseconds);
+                    return new
+                    {
+                        ok = false,
+                        error = ex.ErrorCode,
+                        message = ex.Message,
+                        invocationId
+                    };
+                }
+            }
+            else if (latitude is { } parsedLat && longitude is { } parsedLon)
+            {
+                if (parsedLat is < -90 or > 90 || parsedLon is < -180 or > 180
+                    || double.IsNaN(parsedLat) || double.IsNaN(parsedLon)
+                    || double.IsInfinity(parsedLat) || double.IsInfinity(parsedLon))
+                {
+                    return Error("invalid_coordinates", "latitude must be -90 to 90 and longitude must be -180 to 180.", invocationId);
+                }
+
+                lat = parsedLat;
+                lon = parsedLon;
+            }
+            else
+            {
+                return Error("missing_location", "Provide place, or latitude and longitude.", invocationId);
             }
 
             var resolvedDate = ResolveDate(date, out var dateError);
@@ -89,8 +131,8 @@ public sealed class GetSunriseSunsetTool
             }
 
             var result = await _client.GetAsync(
-                latitude,
-                longitude,
+                lat,
+                lon,
                 resolvedDate,
                 string.IsNullOrWhiteSpace(timeZone) ? null : timeZone.Trim(),
                 invocationId,
@@ -137,6 +179,7 @@ public sealed class GetSunriseSunsetTool
                 invocationId,
                 source = "LaughingFish.SunriseSunsetApi",
                 statusCode = result.StatusCode,
+                location = locationPayload ?? new { latitude = lat, longitude = lon },
                 result = payload
             };
         }

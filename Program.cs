@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Azure.Monitor.OpenTelemetry.Exporter;
 using LaughingFish.Mcp.Clients;
 using LaughingFish.Mcp.Configuration;
+using LaughingFish.Mcp.Location;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Azure.Functions.Worker.OpenTelemetry;
@@ -16,6 +17,7 @@ builder.ConfigureFunctionsWebApplication();
 
 builder.Services.Configure<McpOptions>(builder.Configuration);
 builder.Services.AddHttpClient<ISunriseSunsetApiClient, SunriseSunsetApiClient>();
+builder.Services.AddHttpClient<ILocationResolver, AzureMapsLocationResolver>();
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
 {
