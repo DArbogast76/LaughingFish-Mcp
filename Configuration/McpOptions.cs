@@ -2,8 +2,8 @@ namespace LaughingFish.Mcp.Configuration;
 
 /// <summary>
 /// Bound from environment / App Settings. No secrets live in code.
-/// This slice only reports whether settings are present. It does not
-/// connect to Redis, Maps, or the three APIs.
+/// Settings bind from App Settings. This host calls SunriseSunset when
+/// that tool runs. It does not call Redis, Maps, WaterTemp, or Weather yet.
 /// </summary>
 public sealed class McpOptions
 {

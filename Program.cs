@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Azure.Monitor.OpenTelemetry.Exporter;
+using LaughingFish.Mcp.Clients;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
@@ -14,6 +15,7 @@ var builder = FunctionsApplication.CreateBuilder(args);
 builder.ConfigureFunctionsWebApplication();
 
 builder.Services.Configure<McpOptions>(builder.Configuration);
+builder.Services.AddHttpClient<ISunriseSunsetApiClient, SunriseSunsetApiClient>();
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
 {

@@ -11,7 +11,6 @@ namespace LaughingFish.Mcp;
 /// <summary>
 /// Deployment smoke test. Does not call Redis, Maps, or downstream APIs.
 /// GET /api/health
-/// recheckaftergitfix
 /// </summary>
 public sealed class Health
 {
@@ -86,7 +85,7 @@ public sealed class Health
             mcp = new
             {
                 serverName = "LaughingFish-Mcp",
-                serverVersion = "0.1.0",
+                serverVersion = "0.2.0",
                 transport = "streamable-http",
                 endpoint = "/runtime/webhooks/mcp"
             },
