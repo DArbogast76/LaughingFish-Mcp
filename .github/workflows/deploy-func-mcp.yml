@@ -1,0 +1,46 @@
+name: Deploy func-Mcp-prod01
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_NAME: func-Mcp-prod01
+  AZURE_RESOURCE_GROUP: rg-LaughingFish-Mcp
+  DOTNET_VERSION: "10.0.x"
+  PROJECT_PATH: LaughingFish-Mcp.csproj
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --output ./publish
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: c8f08086-8927-4796-83e5-0a4b711ccd2e
+          tenant-id: a75af57e-2509-48af-b1b7-44a666115a79
+          subscription-id: 67645177-ba51-4b35-a7be-f9a435a30707
+
+      - name: Deploy to Flex Consumption
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
+          package: ./publish
+          respect-funcignore: true
