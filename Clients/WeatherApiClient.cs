@@ -59,7 +59,8 @@ public sealed class WeatherApiClient : IWeatherApiClient
 
         var baseUrl = _options.WeatherApiBaseUrl.TrimEnd('/');
         var query = $"lat={Uri.EscapeDataString(latitude.ToString(CultureInfo.InvariantCulture))}"
-            + $"&lon={Uri.EscapeDataString(longitude.ToString(CultureInfo.InvariantCulture))}";
+            + $"&lon={Uri.EscapeDataString(longitude.ToString(CultureInfo.InvariantCulture))}"
+            + $"&hours={hourCount.ToString(CultureInfo.InvariantCulture)}";
         var url = $"{baseUrl}{Path}?{query}";
 
         string? accessToken = null;
