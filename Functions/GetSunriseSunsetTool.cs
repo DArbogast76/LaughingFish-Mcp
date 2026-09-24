@@ -19,7 +19,7 @@ public sealed class GetSunriseSunsetTool
 {
     public const string ToolName = "get_sunrise_sunset";
     public const string ToolDescription =
-        "Returns sunrise, sunset, and related solar events. Pass place (city or address) or latitude+longitude. Convert relative dates such as 'this Saturday' to yyyy-MM-dd before calling. Optional IANA time zone. Does not invent times when Maps or the API fails.";
+        "Sunrise, sunset, dawn, dusk, civil twilight, and solar noon for a place and date. Pass place (preferred) or latitude and longitude. Convert relative dates such as 'tomorrow' or 'this Saturday' to yyyy-MM-dd before calling. Optional IANA time zone. Does not return weather or water temperature. Do not invent times when Maps or the API fails.";
 
     private readonly ILogger<GetSunriseSunsetTool> _logger;
     private readonly ISunriseSunsetApiClient _client;

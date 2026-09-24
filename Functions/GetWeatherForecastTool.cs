@@ -18,7 +18,7 @@ public sealed class GetWeatherForecastTool
 {
     public const string ToolName = "get_weather_forecast";
     public const string ToolDescription =
-        "Returns an hourly weather forecast. Pass place (city or address) or latitude+longitude. Optional hours (24, 48, or 72) or days (1, 3, or 7). Default is 24 hours. Do not invent forecasts when Maps or the API fails.";
+        "Hourly air weather forecast: temperature, rain, wind, humidity, sky cover, and conditions. Pass place (preferred) or latitude and longitude. Optional hours 24, 48, or 72, or days 1, 3, or 7. Default 24 hours. Does not return sunrise, sunset, or water temperature. Do not invent forecasts when Maps or the API fails.";
 
     private static readonly int[] AllowedHours = [24, 48, 72];
     private static readonly int[] AllowedDays = [1, 3, 7];
