@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <Compile Include="*.cs" />
+    <Compile Include="Cache\**\*.cs" />
     <Compile Include="Clients\**\*.cs" />
     <Compile Include="Configuration\**\*.cs" />
     <Compile Include="Functions\**\*.cs" />
@@ -30,6 +31,7 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Mcp" Version="1.6.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.7" />
     <PackageReference Include="Azure.Identity" Version="1.17.0" />
+    <PackageReference Include="Microsoft.Azure.StackExchangeRedis" Version="3.2.1" />
   </ItemGroup>
 
 </Project>

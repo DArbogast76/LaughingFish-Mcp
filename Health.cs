@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LaughingFish.Mcp.Cache;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,22 +10,24 @@ using Microsoft.Extensions.Options;
 namespace LaughingFish.Mcp;
 
 /// <summary>
-/// Deployment smoke test. Does not call Redis, Maps, or downstream APIs.
+/// Deployment smoke test. Pings Redis when bound. Does not call Maps or downstream APIs.
 /// GET /api/health
 /// </summary>
 public sealed class Health
 {
     private readonly ILogger<Health> _logger;
     private readonly McpOptions _options;
+    private readonly IMcpCache _cache;
 
-    public Health(ILogger<Health> logger, IOptions<McpOptions> options)
+    public Health(ILogger<Health> logger, IOptions<McpOptions> options, IMcpCache cache)
     {
         _logger = logger;
         _options = options.Value;
+        _cache = cache;
     }
 
     [Function("Health")]
-    public IActionResult Run(
+    public async Task<IActionResult> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "health")] HttpRequest req,
         FunctionContext context)
     {
@@ -39,7 +42,8 @@ public sealed class Health
 
         try
         {
-            var payload = BuildHealthPayload(invocationId);
+            var redisConnected = await _cache.PingAsync(invocationId, context.CancellationToken).ConfigureAwait(false);
+            var payload = BuildHealthPayload(invocationId, redisConnected);
 
             _logger.LogInformation(
                 "Health bound settings. InvocationId={InvocationId} RedisHostBound={RedisHostBound} RedisPort={RedisPort} RedisUserBound={RedisUserBound} AzureMapsBound={AzureMapsBound} WaterTempApiBound={WaterTempApiBound} WeatherApiBound={WeatherApiBound} SunriseSunsetApiBound={SunriseSunsetApiBound} PinRecentHours={PinRecentHours}",
@@ -72,7 +76,7 @@ public sealed class Health
         }
     }
 
-    internal object BuildHealthPayload(string invocationId)
+    internal object BuildHealthPayload(string invocationId, bool redisConnected)
     {
         return new
         {
@@ -94,6 +98,7 @@ public sealed class Health
                 redisHostBound = _options.RedisHostBound,
                 redisPort = _options.RedisPort,
                 redisUserBound = _options.RedisUserBound,
+                redisConnected,
                 azureMapsBound = _options.AzureMapsBound,
                 waterTempApiBound = _options.WaterTempApiBound,
                 waterTempApiAudienceBound = _options.WaterTempApiAudienceBound,
@@ -101,7 +106,12 @@ public sealed class Health
                 weatherApiAudienceBound = _options.WeatherApiAudienceBound,
                 sunriseSunsetApiBound = _options.SunriseSunsetApiBound,
                 sunriseSunsetApiAudienceBound = _options.SunriseSunsetApiAudienceBound,
-                pinRecentHours = _options.PinRecentHours
+                pinRecentHours = _options.PinRecentHours,
+                weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
+                waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
+                sunriseCacheTtlSeconds = (int)_options.SunriseCacheTtl.TotalSeconds,
+                mapsCacheTtlSeconds = (int)_options.MapsCacheTtl.TotalSeconds,
+                cacheDefaultTtlSeconds = (int)_options.DefaultCacheTtl.TotalSeconds
             }
         };
     }

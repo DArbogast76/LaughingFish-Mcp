@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LaughingFish.Mcp.Cache;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Mcp;
@@ -8,26 +9,28 @@ using Microsoft.Extensions.Options;
 namespace LaughingFish.Mcp.Functions;
 
 /// <summary>
-/// First MCP tool. Confirms the MCP extension is wired.
-/// Does not call Redis, Maps, or downstream APIs.
+/// Confirms the MCP host is wired and whether Redis answers a ping.
+/// Does not fetch water temperature, weather, or sunrise/sunset.
 /// </summary>
 public sealed class ServerHealthTool
 {
     public const string ToolName = "server_health";
     public const string ToolDescription =
-        "Returns LaughingFish MCP host health and whether Redis, Maps, and API base URLs are bound. Does not fetch water temperature, weather, or sunrise/sunset.";
+        "Returns LaughingFish MCP host health, Redis connectivity, and whether Maps and API base URLs are bound. Does not fetch water temperature, weather, or sunrise/sunset.";
 
     private readonly ILogger<ServerHealthTool> _logger;
     private readonly McpOptions _options;
+    private readonly IMcpCache _cache;
 
-    public ServerHealthTool(ILogger<ServerHealthTool> logger, IOptions<McpOptions> options)
+    public ServerHealthTool(ILogger<ServerHealthTool> logger, IOptions<McpOptions> options, IMcpCache cache)
     {
         _logger = logger;
         _options = options.Value;
+        _cache = cache;
     }
 
     [Function(nameof(ServerHealthTool))]
-    public object Run(
+    public async Task<object> Run(
         [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
         FunctionContext functionContext)
     {
@@ -42,6 +45,7 @@ public sealed class ServerHealthTool
 
         try
         {
+            var redisConnected = await _cache.PingAsync(invocationId, functionContext.CancellationToken).ConfigureAwait(false);
             var payload = new
             {
                 status = "ok",
@@ -56,6 +60,7 @@ public sealed class ServerHealthTool
                     redisHostBound = _options.RedisHostBound,
                     redisPort = _options.RedisPort,
                     redisUserBound = _options.RedisUserBound,
+                    redisConnected,
                     azureMapsBound = _options.AzureMapsBound,
                     waterTempApiBound = _options.WaterTempApiBound,
                     waterTempApiAudienceBound = _options.WaterTempApiAudienceBound,
@@ -63,7 +68,12 @@ public sealed class ServerHealthTool
                     weatherApiAudienceBound = _options.WeatherApiAudienceBound,
                     sunriseSunsetApiBound = _options.SunriseSunsetApiBound,
                     sunriseSunsetApiAudienceBound = _options.SunriseSunsetApiAudienceBound,
-                    pinRecentHours = _options.PinRecentHours
+                    pinRecentHours = _options.PinRecentHours,
+                    weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
+                    waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
+                    sunriseCacheTtlSeconds = (int)_options.SunriseCacheTtl.TotalSeconds,
+                    mapsCacheTtlSeconds = (int)_options.MapsCacheTtl.TotalSeconds,
+                    cacheDefaultTtlSeconds = (int)_options.DefaultCacheTtl.TotalSeconds
                 }
             };
 

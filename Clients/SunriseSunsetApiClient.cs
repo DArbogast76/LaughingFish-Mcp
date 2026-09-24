@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using Azure.Core;
 using Azure.Identity;
+using LaughingFish.Mcp.Cache;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,16 +15,19 @@ public sealed class SunriseSunsetApiClient : ISunriseSunsetApiClient
 
     private readonly HttpClient _http;
     private readonly McpOptions _options;
+    private readonly IMcpCache _cache;
     private readonly ILogger<SunriseSunsetApiClient> _logger;
     private readonly TokenCredential _credential = CreateCredential();
 
     public SunriseSunsetApiClient(
         HttpClient http,
         IOptions<McpOptions> options,
+        IMcpCache cache,
         ILogger<SunriseSunsetApiClient> logger)
     {
         _http = http;
         _options = options.Value;
+        _cache = cache;
         _logger = logger;
         _http.Timeout = TimeSpan.FromSeconds(15);
         _http.DefaultRequestHeaders.UserAgent.Clear();
@@ -50,6 +54,17 @@ public sealed class SunriseSunsetApiClient : ISunriseSunsetApiClient
                 false,
                 "sunrise_sunset_unbound",
                 "SunriseSunsetApiBaseUrl is not configured.");
+        }
+
+        var cacheKey = McpCacheKeys.Sunrise(latitude, longitude, date, timeZone);
+        var cached = await _cache.GetAsync(cacheKey, invocationId, cancellationToken).ConfigureAwait(false);
+        if (cached.Hit && !string.IsNullOrWhiteSpace(cached.Value))
+        {
+            _logger.LogInformation(
+                "SunriseSunset client cache hit. InvocationId={InvocationId} Key={Key}",
+                invocationId,
+                cacheKey);
+            return new SunriseSunsetApiResult(200, cached.Value, true, null, null);
         }
 
         var baseUrl = _options.SunriseSunsetApiBaseUrl.TrimEnd('/');
@@ -140,6 +155,8 @@ public sealed class SunriseSunsetApiClient : ISunriseSunsetApiClient
                     $"SunriseSunset API returned {(int)response.StatusCode}.");
             }
 
+            await _cache.SetAsync(cacheKey, body, _options.SunriseCacheTtl, invocationId, cancellationToken)
+                .ConfigureAwait(false);
             return new SunriseSunsetApiResult((int)response.StatusCode, body, true, null, null);
         }
         catch (TaskCanceledException ex)

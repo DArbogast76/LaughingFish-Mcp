@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using Azure.Core;
 using Azure.Identity;
+using LaughingFish.Mcp.Cache;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,18 +19,26 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
 
     private static readonly TokenRequestContext MapsTokenContext = new([TokenScope]);
 
+    private static readonly JsonSerializerOptions CacheJson = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private readonly HttpClient _http;
     private readonly McpOptions _options;
+    private readonly IMcpCache _cache;
     private readonly ILogger<AzureMapsLocationResolver> _logger;
     private readonly TokenCredential _credential = CreateCredential();
 
     public AzureMapsLocationResolver(
         HttpClient http,
         IOptions<McpOptions> options,
+        IMcpCache cache,
         ILogger<AzureMapsLocationResolver> logger)
     {
         _http = http;
         _options = options.Value;
+        _cache = cache;
         _logger = logger;
         _http.Timeout = TimeSpan.FromSeconds(20);
         _http.DefaultRequestHeaders.UserAgent.Clear();
@@ -56,6 +65,23 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
             throw new LocationResolutionException(
                 "maps_unbound",
                 "AzureMapsClientId and AzureMapsEndpoint are not configured.");
+        }
+
+        var cacheKey = McpCacheKeys.Maps(trimmed);
+        var cached = await _cache.GetAsync(cacheKey, invocationId, cancellationToken).ConfigureAwait(false);
+        if (cached.Hit && !string.IsNullOrWhiteSpace(cached.Value))
+        {
+            var fromCache = JsonSerializer.Deserialize<ResolvedLocation>(cached.Value, CacheJson);
+            if (fromCache is not null)
+            {
+                _logger.LogInformation(
+                    "Location resolver cache hit. InvocationId={InvocationId} Key={Key} Lat={Lat} Lon={Lon}",
+                    invocationId,
+                    cacheKey,
+                    fromCache.Latitude,
+                    fromCache.Longitude);
+                return fromCache;
+            }
         }
 
         AccessToken token;
@@ -136,6 +162,13 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
                 location.Latitude,
                 location.Longitude,
                 location.FormattedAddress);
+
+            await _cache.SetAsync(
+                cacheKey,
+                JsonSerializer.Serialize(location),
+                _options.MapsCacheTtl,
+                invocationId,
+                cancellationToken).ConfigureAwait(false);
 
             return location;
         }

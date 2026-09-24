@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Azure.Core;
 using Azure.Identity;
+using LaughingFish.Mcp.Cache;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,16 +18,19 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
 
     private readonly HttpClient _http;
     private readonly McpOptions _options;
+    private readonly IMcpCache _cache;
     private readonly ILogger<WaterTempApiClient> _logger;
     private readonly TokenCredential _credential = CreateCredential();
 
     public WaterTempApiClient(
         HttpClient http,
         IOptions<McpOptions> options,
+        IMcpCache cache,
         ILogger<WaterTempApiClient> logger)
     {
         _http = http;
         _options = options.Value;
+        _cache = cache;
         _logger = logger;
         _http.Timeout = TimeSpan.FromSeconds(30);
         _http.DefaultRequestHeaders.UserAgent.Clear();
@@ -54,6 +58,17 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
                 false,
                 "water_temp_unbound",
                 "WaterTempApiBaseUrl is not configured.");
+        }
+
+        var cacheKey = McpCacheKeys.WaterTemperature(latitude, longitude, nearest, days, maxDistanceMiles);
+        var cached = await _cache.GetAsync(cacheKey, invocationId, cancellationToken).ConfigureAwait(false);
+        if (cached.Hit && !string.IsNullOrWhiteSpace(cached.Value))
+        {
+            _logger.LogInformation(
+                "WaterTemp client cache hit. InvocationId={InvocationId} Key={Key}",
+                invocationId,
+                cacheKey);
+            return new WaterTempApiResult(200, cached.Value, true, null, null);
         }
 
         var baseUrl = _options.WaterTempApiBaseUrl.TrimEnd('/');
@@ -143,6 +158,8 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
             }
 
             var shaped = Shape(body, days, invocationId);
+            await _cache.SetAsync(cacheKey, shaped, _options.WaterTempCacheTtl, invocationId, cancellationToken)
+                .ConfigureAwait(false);
             return new WaterTempApiResult((int)response.StatusCode, shaped, true, null, null);
         }
         catch (TaskCanceledException ex)

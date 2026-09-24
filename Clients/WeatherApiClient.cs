@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Azure.Core;
 using Azure.Identity;
+using LaughingFish.Mcp.Cache;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,16 +18,19 @@ public sealed class WeatherApiClient : IWeatherApiClient
 
     private readonly HttpClient _http;
     private readonly McpOptions _options;
+    private readonly IMcpCache _cache;
     private readonly ILogger<WeatherApiClient> _logger;
     private readonly TokenCredential _credential = CreateCredential();
 
     public WeatherApiClient(
         HttpClient http,
         IOptions<McpOptions> options,
+        IMcpCache cache,
         ILogger<WeatherApiClient> logger)
     {
         _http = http;
         _options = options.Value;
+        _cache = cache;
         _logger = logger;
         var timeoutSeconds = _options.WeatherApiTimeoutSeconds > 0 ? _options.WeatherApiTimeoutSeconds : 90;
         _http.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
@@ -57,10 +61,23 @@ public sealed class WeatherApiClient : IWeatherApiClient
                 hourCount);
         }
 
+        var cacheKey = McpCacheKeys.Weather(latitude, longitude);
+        var cached = await _cache.GetAsync(cacheKey, invocationId, cancellationToken).ConfigureAwait(false);
+        if (cached.Hit && !string.IsNullOrWhiteSpace(cached.Value))
+        {
+            var cachedTrimmed = TrimHours(cached.Value, hourCount, invocationId, out var cachedReturned);
+            _logger.LogInformation(
+                "Weather client cache hit. InvocationId={InvocationId} Key={Key} HourCount={HourCount} HoursReturned={HoursReturned}",
+                invocationId,
+                cacheKey,
+                hourCount,
+                cachedReturned);
+            return new WeatherApiResult(200, cachedTrimmed, true, null, null, cachedReturned, hourCount);
+        }
+
         var baseUrl = _options.WeatherApiBaseUrl.TrimEnd('/');
         var query = $"lat={Uri.EscapeDataString(latitude.ToString(CultureInfo.InvariantCulture))}"
-            + $"&lon={Uri.EscapeDataString(longitude.ToString(CultureInfo.InvariantCulture))}"
-            + $"&hours={hourCount.ToString(CultureInfo.InvariantCulture)}";
+            + $"&lon={Uri.EscapeDataString(longitude.ToString(CultureInfo.InvariantCulture))}";
         var url = $"{baseUrl}{Path}?{query}";
 
         string? accessToken = null;
@@ -106,12 +123,13 @@ public sealed class WeatherApiClient : IWeatherApiClient
         }
 
         _logger.LogInformation(
-            "Weather client request. InvocationId={InvocationId} Path={Path} Lat={Lat} Lon={Lon} HourCount={HourCount} BearerAttached={BearerAttached} TimeoutSeconds={TimeoutSeconds}",
+            "Weather client request. InvocationId={InvocationId} Path={Path} Lat={Lat} Lon={Lon} HourCount={HourCount} Key={Key} BearerAttached={BearerAttached} TimeoutSeconds={TimeoutSeconds}",
             invocationId,
             Path,
             latitude,
             longitude,
             hourCount,
+            cacheKey,
             accessToken is not null,
             (int)_http.Timeout.TotalSeconds);
 
@@ -145,6 +163,9 @@ public sealed class WeatherApiClient : IWeatherApiClient
                     null,
                     hourCount);
             }
+
+            await _cache.SetAsync(cacheKey, body, _options.WeatherCacheTtl, invocationId, cancellationToken)
+                .ConfigureAwait(false);
 
             var trimmed = TrimHours(body, hourCount, invocationId, out var returned);
             return new WeatherApiResult((int)response.StatusCode, trimmed, true, null, null, returned, hourCount);
