@@ -174,9 +174,9 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
             var stationsNode = ReadArray(root, "stations");
 
             var stations = new JsonArray();
-            if (stationsNode is not null)
+            if (stationsNode is { } stationList)
             {
-                foreach (var station in stationsNode.EnumerateArray())
+                foreach (var station in stationList.EnumerateArray())
                 {
                     stations.Add(ShapeStation(station, days));
                 }
