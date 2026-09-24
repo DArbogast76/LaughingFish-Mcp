@@ -17,7 +17,26 @@ var builder = FunctionsApplication.CreateBuilder(args);
 builder.ConfigureFunctionsWebApplication();
 
 builder.Services.Configure<McpOptions>(builder.Configuration);
-builder.Services.AddSingleton<IMcpCache, RedisMcpCache>();
+builder.Services.AddSingleton<IMcpCache>(sp =>
+{
+    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<McpOptions>>().Value;
+    var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("LaughingFish.Mcp.Cache");
+    if (!options.RedisHostBound)
+    {
+        logger.LogInformation("MCP cache using no-op implementation. RedisHost is not bound.");
+        return new NoOpMcpCache();
+    }
+
+    try
+    {
+        return ActivatorUtilities.CreateInstance<RedisMcpCache>(sp);
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "MCP cache Redis implementation failed to start. Using no-op cache.");
+        return new NoOpMcpCache();
+    }
+});
 builder.Services.AddHttpClient<ISunriseSunsetApiClient, SunriseSunsetApiClient>();
 builder.Services.AddHttpClient<IWeatherApiClient, WeatherApiClient>();
 builder.Services.AddHttpClient<IWaterTempApiClient, WaterTempApiClient>();

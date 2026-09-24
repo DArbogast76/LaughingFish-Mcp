@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using LaughingFish.Mcp.Cache;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,24 +9,22 @@ using Microsoft.Extensions.Options;
 namespace LaughingFish.Mcp;
 
 /// <summary>
-/// Deployment smoke test. Pings Redis when bound. Does not call Maps or downstream APIs.
+/// Deployment smoke test. Does not call Redis, Maps, or downstream APIs.
 /// GET /api/health
 /// </summary>
 public sealed class Health
 {
     private readonly ILogger<Health> _logger;
     private readonly McpOptions _options;
-    private readonly IMcpCache _cache;
 
-    public Health(ILogger<Health> logger, IOptions<McpOptions> options, IMcpCache cache)
+    public Health(ILogger<Health> logger, IOptions<McpOptions> options)
     {
         _logger = logger;
         _options = options.Value;
-        _cache = cache;
     }
 
     [Function("Health")]
-    public async Task<IActionResult> Run(
+    public IActionResult Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "health")] HttpRequest req,
         FunctionContext context)
     {
@@ -42,8 +39,7 @@ public sealed class Health
 
         try
         {
-            var redisConnected = await _cache.PingAsync(invocationId, context.CancellationToken).ConfigureAwait(false);
-            var payload = BuildHealthPayload(invocationId, redisConnected);
+            var payload = BuildHealthPayload(invocationId);
 
             _logger.LogInformation(
                 "Health bound settings. InvocationId={InvocationId} RedisHostBound={RedisHostBound} RedisPort={RedisPort} RedisUserBound={RedisUserBound} AzureMapsBound={AzureMapsBound} WaterTempApiBound={WaterTempApiBound} WeatherApiBound={WeatherApiBound} SunriseSunsetApiBound={SunriseSunsetApiBound} PinRecentHours={PinRecentHours}",
@@ -76,7 +72,7 @@ public sealed class Health
         }
     }
 
-    internal object BuildHealthPayload(string invocationId, bool redisConnected)
+    internal object BuildHealthPayload(string invocationId)
     {
         return new
         {
@@ -98,7 +94,6 @@ public sealed class Health
                 redisHostBound = _options.RedisHostBound,
                 redisPort = _options.RedisPort,
                 redisUserBound = _options.RedisUserBound,
-                redisConnected,
                 azureMapsBound = _options.AzureMapsBound,
                 waterTempApiBound = _options.WaterTempApiBound,
                 waterTempApiAudienceBound = _options.WaterTempApiAudienceBound,
