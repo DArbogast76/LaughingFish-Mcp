@@ -2,8 +2,8 @@ namespace LaughingFish.Mcp.Configuration;
 
 /// <summary>
 /// Bound from environment / App Settings. No secrets live in code.
-/// Settings bind from App Settings. This host calls SunriseSunset and Weather
-/// when those tools run. It does not call Redis or WaterTemp yet.
+/// Settings bind from App Settings. This host calls SunriseSunset, Weather,
+/// and WaterTemp when those tools run. It does not call Redis yet.
 /// </summary>
 public sealed class McpOptions
 {
@@ -13,6 +13,7 @@ public sealed class McpOptions
     public string AzureMapsClientId { get; set; } = string.Empty;
     public string AzureMapsEndpoint { get; set; } = string.Empty;
     public string WaterTempApiBaseUrl { get; set; } = string.Empty;
+    public string WaterTempApiAudience { get; set; } = string.Empty;
     public string WeatherApiBaseUrl { get; set; } = string.Empty;
     public string WeatherApiAudience { get; set; } = string.Empty;
     public string SunriseSunsetApiBaseUrl { get; set; } = string.Empty;
@@ -25,6 +26,7 @@ public sealed class McpOptions
         !string.IsNullOrWhiteSpace(AzureMapsClientId)
         && !string.IsNullOrWhiteSpace(AzureMapsEndpoint);
     public bool WaterTempApiBound => !string.IsNullOrWhiteSpace(WaterTempApiBaseUrl);
+    public bool WaterTempApiAudienceBound => !string.IsNullOrWhiteSpace(WaterTempApiAudience);
     public bool WeatherApiBound => !string.IsNullOrWhiteSpace(WeatherApiBaseUrl);
     public bool WeatherApiAudienceBound => !string.IsNullOrWhiteSpace(WeatherApiAudience);
     public bool SunriseSunsetApiBound => !string.IsNullOrWhiteSpace(SunriseSunsetApiBaseUrl);

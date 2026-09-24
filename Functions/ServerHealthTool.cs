@@ -58,6 +58,7 @@ public sealed class ServerHealthTool
                     redisUserBound = _options.RedisUserBound,
                     azureMapsBound = _options.AzureMapsBound,
                     waterTempApiBound = _options.WaterTempApiBound,
+                    waterTempApiAudienceBound = _options.WaterTempApiAudienceBound,
                     weatherApiBound = _options.WeatherApiBound,
                     weatherApiAudienceBound = _options.WeatherApiAudienceBound,
                     sunriseSunsetApiBound = _options.SunriseSunsetApiBound,
