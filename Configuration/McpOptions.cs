@@ -2,8 +2,7 @@ namespace LaughingFish.Mcp.Configuration;
 
 /// <summary>
 /// Bound from environment / App Settings. No secrets live in code.
-/// Settings bind from App Settings. This host calls SunriseSunset, Weather,
-/// and WaterTemp when those tools run. Redis is the MCP response cache only.
+/// Integer settings keep int defaults. Invalid env values are ignored.
 /// </summary>
 public sealed class McpOptions
 {
@@ -38,12 +37,12 @@ public sealed class McpOptions
     public bool SunriseSunsetApiBound => !string.IsNullOrWhiteSpace(SunriseSunsetApiBaseUrl);
     public bool SunriseSunsetApiAudienceBound => !string.IsNullOrWhiteSpace(SunriseSunsetApiAudience);
 
-    public TimeSpan WeatherCacheTtl => Ttl(WeatherCacheTtlSeconds);
-    public TimeSpan WaterTempCacheTtl => Ttl(WaterTempCacheTtlSeconds);
-    public TimeSpan SunriseCacheTtl => Ttl(SunriseCacheTtlSeconds);
-    public TimeSpan MapsCacheTtl => Ttl(MapsCacheTtlSeconds);
-    public TimeSpan DefaultCacheTtl => Ttl(CacheDefaultTtlSeconds);
+    public TimeSpan WeatherCacheTtl => Ttl(WeatherCacheTtlSeconds, 3600);
+    public TimeSpan WaterTempCacheTtl => Ttl(WaterTempCacheTtlSeconds, 3600);
+    public TimeSpan SunriseCacheTtl => Ttl(SunriseCacheTtlSeconds, 604800);
+    public TimeSpan MapsCacheTtl => Ttl(MapsCacheTtlSeconds, 604800);
+    public TimeSpan DefaultCacheTtl => Ttl(CacheDefaultTtlSeconds, 3600);
 
-    private TimeSpan Ttl(int seconds) =>
-        TimeSpan.FromSeconds(seconds > 0 ? seconds : CacheDefaultTtlSeconds);
+    private static TimeSpan Ttl(int seconds, int fallback) =>
+        TimeSpan.FromSeconds(seconds > 0 ? seconds : fallback);
 }

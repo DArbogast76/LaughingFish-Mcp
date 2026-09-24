@@ -16,7 +16,8 @@ var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
 
-builder.Services.Configure<McpOptions>(builder.Configuration);
+builder.Services.AddOptions<McpOptions>();
+builder.Services.AddSingleton<Microsoft.Extensions.Options.IConfigureOptions<McpOptions>, McpOptionsSetup>();
 builder.Services.AddSingleton<IMcpCache>(sp =>
 {
     var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<McpOptions>>().Value;
