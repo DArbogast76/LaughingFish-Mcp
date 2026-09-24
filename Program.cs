@@ -17,6 +17,7 @@ builder.ConfigureFunctionsWebApplication();
 
 builder.Services.Configure<McpOptions>(builder.Configuration);
 builder.Services.AddHttpClient<ISunriseSunsetApiClient, SunriseSunsetApiClient>();
+builder.Services.AddHttpClient<IWeatherApiClient, WeatherApiClient>();
 builder.Services.AddHttpClient<ILocationResolver, AzureMapsLocationResolver>();
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>

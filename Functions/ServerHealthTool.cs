@@ -59,6 +59,7 @@ public sealed class ServerHealthTool
                     azureMapsBound = _options.AzureMapsBound,
                     waterTempApiBound = _options.WaterTempApiBound,
                     weatherApiBound = _options.WeatherApiBound,
+                    weatherApiAudienceBound = _options.WeatherApiAudienceBound,
                     sunriseSunsetApiBound = _options.SunriseSunsetApiBound,
                     sunriseSunsetApiAudienceBound = _options.SunriseSunsetApiAudienceBound,
                     pinRecentHours = _options.PinRecentHours

@@ -15,7 +15,7 @@ public sealed class ResolveLocationTool
 {
     public const string ToolName = "resolve_location";
     public const string ToolDescription =
-        "Converts a place name, city, or address into latitude and longitude using Azure Maps. Use this before calling APIs that need coordinates, or pass the same place string to get_sunrise_sunset. Does not invent coordinates when Maps fails.";
+        "Converts a place name, city, or address into latitude and longitude using Azure Maps. Use this before calling APIs that need coordinates, or pass the same place string to get_sunrise_sunset or get_weather_forecast. Does not invent coordinates when Maps fails.";
 
     private readonly ILogger<ResolveLocationTool> _logger;
     private readonly ILocationResolver _resolver;
