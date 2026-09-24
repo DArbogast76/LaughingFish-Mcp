@@ -16,6 +16,9 @@ namespace LaughingFish.Mcp.Cache;
 /// </summary>
 public sealed class RedisMcpCache : IMcpCache, IAsyncDisposable
 {
+    private const int ConnectTimeoutMilliseconds = 5000;
+    private const int CommandTimeoutMilliseconds = 5000;
+
     private readonly ILogger<RedisMcpCache> _logger;
     private readonly McpOptions _options;
     private readonly TokenCredential _credential = CreateCredential();
@@ -210,20 +213,31 @@ public sealed class RedisMcpCache : IMcpCache, IAsyncDisposable
             var configuration = ConfigurationOptions.Parse($"{host}:{port}");
             configuration.Ssl = true;
             configuration.AbortOnConnectFail = false;
+            configuration.ConnectTimeout = ConnectTimeoutMilliseconds;
+            configuration.SyncTimeout = CommandTimeoutMilliseconds;
+            configuration.AsyncTimeout = CommandTimeoutMilliseconds;
             if (!string.IsNullOrWhiteSpace(_options.RedisUser))
             {
                 configuration.User = _options.RedisUser.Trim();
             }
 
-            await configuration.ConfigureForAzureWithTokenCredentialAsync(_credential).ConfigureAwait(false);
+            using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            connectCts.CancelAfter(ConnectTimeoutMilliseconds);
+
+            await configuration.ConfigureForAzureWithTokenCredentialAsync(_credential)
+                .WaitAsync(connectCts.Token)
+                .ConfigureAwait(false);
 
             _logger.LogInformation(
-                "MCP cache connecting. Host={Host} Port={Port} UserBound={UserBound}",
+                "MCP cache connecting. Host={Host} Port={Port} UserBound={UserBound} ConnectTimeoutMs={ConnectTimeoutMs}",
                 host,
                 port,
-                _options.RedisUserBound);
+                _options.RedisUserBound,
+                ConnectTimeoutMilliseconds);
 
-            _mux = await ConnectionMultiplexer.ConnectAsync(configuration).ConfigureAwait(false);
+            _mux = await ConnectionMultiplexer.ConnectAsync(configuration)
+                .WaitAsync(connectCts.Token)
+                .ConfigureAwait(false);
             _db = _mux.GetDatabase();
             _logger.LogInformation("MCP cache connected.");
             return _db;
