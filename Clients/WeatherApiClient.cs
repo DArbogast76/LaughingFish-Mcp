@@ -28,7 +28,8 @@ public sealed class WeatherApiClient : IWeatherApiClient
         _http = http;
         _options = options.Value;
         _logger = logger;
-        _http.Timeout = TimeSpan.FromSeconds(30);
+        var timeoutSeconds = _options.WeatherApiTimeoutSeconds > 0 ? _options.WeatherApiTimeoutSeconds : 90;
+        _http.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
         _http.DefaultRequestHeaders.UserAgent.Clear();
         _http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("LaughingFish-Mcp", "0.3"));
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -104,14 +105,16 @@ public sealed class WeatherApiClient : IWeatherApiClient
         }
 
         _logger.LogInformation(
-            "Weather client request. InvocationId={InvocationId} Path={Path} Lat={Lat} Lon={Lon} HourCount={HourCount} BearerAttached={BearerAttached}",
+            "Weather client request. InvocationId={InvocationId} Path={Path} Lat={Lat} Lon={Lon} HourCount={HourCount} BearerAttached={BearerAttached} TimeoutSeconds={TimeoutSeconds}",
             invocationId,
             Path,
             latitude,
             longitude,
             hourCount,
-            accessToken is not null);
+            accessToken is not null,
+            (int)_http.Timeout.TotalSeconds);
 
+        var sendStarted = Stopwatch.StartNew();
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -124,10 +127,11 @@ public sealed class WeatherApiClient : IWeatherApiClient
             var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
             _logger.LogInformation(
-                "Weather client response. InvocationId={InvocationId} StatusCode={StatusCode} BodyLength={BodyLength}",
+                "Weather client response. InvocationId={InvocationId} StatusCode={StatusCode} BodyLength={BodyLength} ElapsedMs={ElapsedMs}",
                 invocationId,
                 (int)response.StatusCode,
-                body.Length);
+                body.Length,
+                sendStarted.ElapsedMilliseconds);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -146,7 +150,12 @@ public sealed class WeatherApiClient : IWeatherApiClient
         }
         catch (TaskCanceledException ex)
         {
-            _logger.LogWarning(ex, "Weather client timeout. InvocationId={InvocationId}", invocationId);
+            _logger.LogWarning(
+                ex,
+                "Weather client timeout. InvocationId={InvocationId} ElapsedMs={ElapsedMs} CallerCanceled={CallerCanceled}",
+                invocationId,
+                sendStarted.ElapsedMilliseconds,
+                cancellationToken.IsCancellationRequested);
             return new WeatherApiResult(0, null, false, "weather_timeout", "Weather API timed out.", null, hourCount);
         }
         catch (HttpRequestException ex)

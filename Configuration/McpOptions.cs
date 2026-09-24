@@ -16,6 +16,7 @@ public sealed class McpOptions
     public string WaterTempApiAudience { get; set; } = string.Empty;
     public string WeatherApiBaseUrl { get; set; } = string.Empty;
     public string WeatherApiAudience { get; set; } = string.Empty;
+    public int WeatherApiTimeoutSeconds { get; set; } = 90;
     public string SunriseSunsetApiBaseUrl { get; set; } = string.Empty;
     public string SunriseSunsetApiAudience { get; set; } = string.Empty;
     public int PinRecentHours { get; set; } = 48;
