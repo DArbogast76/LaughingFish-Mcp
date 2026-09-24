@@ -292,3 +292,8 @@ __blobstorage__/
 __queuestorage__/
 __tablestorage__/
 __blobstorage__/
+
+
+*.bak
+*.old
+*.note

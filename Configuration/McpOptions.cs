@@ -15,6 +15,7 @@ public sealed class McpOptions
     public string WaterTempApiBaseUrl { get; set; } = string.Empty;
     public string WeatherApiBaseUrl { get; set; } = string.Empty;
     public string SunriseSunsetApiBaseUrl { get; set; } = string.Empty;
+    public string SunriseSunsetApiAudience { get; set; } = string.Empty;
     public int PinRecentHours { get; set; } = 48;
 
     public bool RedisHostBound => !string.IsNullOrWhiteSpace(RedisHost);
@@ -25,4 +26,5 @@ public sealed class McpOptions
     public bool WaterTempApiBound => !string.IsNullOrWhiteSpace(WaterTempApiBaseUrl);
     public bool WeatherApiBound => !string.IsNullOrWhiteSpace(WeatherApiBaseUrl);
     public bool SunriseSunsetApiBound => !string.IsNullOrWhiteSpace(SunriseSunsetApiBaseUrl);
+    public bool SunriseSunsetApiAudienceBound => !string.IsNullOrWhiteSpace(SunriseSunsetApiAudience);
 }

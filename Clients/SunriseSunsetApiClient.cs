@@ -1,4 +1,7 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
+using Azure.Core;
+using Azure.Identity;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,6 +15,7 @@ public sealed class SunriseSunsetApiClient : ISunriseSunsetApiClient
     private readonly HttpClient _http;
     private readonly McpOptions _options;
     private readonly ILogger<SunriseSunsetApiClient> _logger;
+    private readonly TokenCredential _credential = CreateCredential();
 
     public SunriseSunsetApiClient(
         HttpClient http,
@@ -59,18 +63,65 @@ public sealed class SunriseSunsetApiClient : ISunriseSunsetApiClient
 
         var url = $"{baseUrl}{Path}?{query}";
 
+        string? accessToken = null;
+        if (_options.SunriseSunsetApiAudienceBound)
+        {
+            var tokenStarted = Stopwatch.StartNew();
+            try
+            {
+                var audience = _options.SunriseSunsetApiAudience.Trim().TrimEnd('/');
+                var scope = audience.EndsWith("/.default", StringComparison.OrdinalIgnoreCase)
+                    ? audience
+                    : $"{audience}/.default";
+                var token = await _credential.GetTokenAsync(new TokenRequestContext([scope]), cancellationToken)
+                    .ConfigureAwait(false);
+                accessToken = token.Token;
+                _logger.LogInformation(
+                    "SunriseSunset client token acquired. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
+                    invocationId,
+                    tokenStarted.ElapsedMilliseconds);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "SunriseSunset client token failure. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
+                    invocationId,
+                    tokenStarted.ElapsedMilliseconds);
+                return new SunriseSunsetApiResult(
+                    0,
+                    null,
+                    false,
+                    "sunrise_sunset_token_failed",
+                    "Could not acquire a token for the SunriseSunset API.");
+            }
+        }
+        else
+        {
+            _logger.LogWarning(
+                "SunriseSunset client sending unauthenticated request. InvocationId={InvocationId} Reason=audience_unbound",
+                invocationId);
+        }
+
         _logger.LogInformation(
-            "SunriseSunset client request. InvocationId={InvocationId} Path={Path} Lat={Lat} Lon={Lon} Date={Date} TimeZone={TimeZone}",
+            "SunriseSunset client request. InvocationId={InvocationId} Path={Path} Lat={Lat} Lon={Lon} Date={Date} TimeZone={TimeZone} BearerAttached={BearerAttached}",
             invocationId,
             Path,
             latitude,
             longitude,
             date,
-            timeZone);
+            timeZone,
+            accessToken is not null);
 
         try
         {
-            using var response = await _http.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (!string.IsNullOrWhiteSpace(accessToken))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            }
+
+            using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
             var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
             _logger.LogInformation(
@@ -107,5 +158,21 @@ public sealed class SunriseSunsetApiClient : ISunriseSunsetApiClient
                 invocationId);
             return new SunriseSunsetApiResult(0, null, false, "sunrise_sunset_unreachable", "SunriseSunset API could not be reached.");
         }
+    }
+
+    private static TokenCredential CreateCredential()
+    {
+        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IDENTITY_ENDPOINT")))
+        {
+            return new ManagedIdentityCredential();
+        }
+
+        return new DefaultAzureCredential(new DefaultAzureCredentialOptions
+        {
+            ExcludeInteractiveBrowserCredential = true,
+            ExcludeVisualStudioCredential = true,
+            ExcludeVisualStudioCodeCredential = true,
+            ExcludeAzurePowerShellCredential = true
+        });
     }
 }

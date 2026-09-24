@@ -60,6 +60,7 @@ public sealed class ServerHealthTool
                     waterTempApiBound = _options.WaterTempApiBound,
                     weatherApiBound = _options.WeatherApiBound,
                     sunriseSunsetApiBound = _options.SunriseSunsetApiBound,
+                    sunriseSunsetApiAudienceBound = _options.SunriseSunsetApiAudienceBound,
                     pinRecentHours = _options.PinRecentHours
                 }
             };

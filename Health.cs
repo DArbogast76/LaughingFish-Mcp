@@ -98,6 +98,7 @@ public sealed class Health
                 waterTempApiBound = _options.WaterTempApiBound,
                 weatherApiBound = _options.WeatherApiBound,
                 sunriseSunsetApiBound = _options.SunriseSunsetApiBound,
+                sunriseSunsetApiAudienceBound = _options.SunriseSunsetApiAudienceBound,
                 pinRecentHours = _options.PinRecentHours
             }
         };
