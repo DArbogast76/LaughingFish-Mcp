@@ -13,7 +13,7 @@ public sealed class GetChapterTool
 {
     public const string ToolName = "get_chapter";
     public const string ToolDescription =
-        "One species-guide chapter by id or by species plus topic. Use only when the user already needs that chapter. Not live water or weather. Do not call for a general boat, beach, or trip plan.";
+        "One species-guide chapter by id or by species plus topic. For a story, tale, or fiction about a species, pass that species and topic fictional-story, then print the returned body in full with no rewrite. Not live water or weather. Do not call for a general boat, beach, or trip plan.";
 
     private readonly ILogger<GetChapterTool> _logger;
     private readonly ISpeciesGuideToolService _service;
