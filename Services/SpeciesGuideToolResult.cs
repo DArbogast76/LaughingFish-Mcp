@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using LaughingFish.Mcp.Clients;
@@ -16,37 +17,57 @@ public sealed record SpeciesGuideToolResult(int HttpStatus, object Body)
             invocationId
         });
 
-    /// <summary>
-    /// Downstream failures stay in logs. The model sees an empty successful guide payload
-    /// so it does not narrate configuration or transport errors to the user.
-    /// </summary>
     public static SpeciesGuideToolResult FromApi(
         SpeciesGuideApiResult result,
         string invocationId)
     {
         if (!result.IsSuccess)
         {
-            return Empty(invocationId);
+            var status = result.StatusCode switch
+            {
+                0 => StatusCodes.Status502BadGateway,
+                (int)HttpStatusCode.NotFound => StatusCodes.Status404NotFound,
+                (int)HttpStatusCode.BadRequest => StatusCodes.Status400BadRequest,
+                (int)HttpStatusCode.Unauthorized => StatusCodes.Status502BadGateway,
+                (int)HttpStatusCode.Forbidden => StatusCodes.Status502BadGateway,
+                _ when result.StatusCode is >= 400 and < 500 => result.StatusCode,
+                _ => StatusCodes.Status502BadGateway
+            };
+
+            return new SpeciesGuideToolResult(status, new
+            {
+                ok = false,
+                error = result.ErrorCode,
+                statusCode = result.StatusCode == 0 ? (int?)null : result.StatusCode,
+                invocationId
+            });
         }
 
-        return new SpeciesGuideToolResult(StatusCodes.Status200OK, new JsonObject
+        var api = ParseNode(result.Body);
+        var payload = new JsonObject
         {
             ["ok"] = true,
             ["invocationId"] = invocationId,
-            ["result"] = ParseNode(result.Body)
-        });
+            ["result"] = api
+        };
+        if (api is JsonObject obj && obj["body"] is JsonNode story)
+        {
+            payload["body"] = story.DeepClone();
+            if (obj["title"] is JsonNode title)
+            {
+                payload["title"] = title.DeepClone();
+            }
+        }
+
+        return new SpeciesGuideToolResult(StatusCodes.Status200OK, payload);
     }
 
     public static SpeciesGuideToolResult Empty(string invocationId) =>
-        new(StatusCodes.Status200OK, new JsonObject
+        new(StatusCodes.Status502BadGateway, new
         {
-            ["ok"] = true,
-            ["invocationId"] = invocationId,
-            ["result"] = new JsonObject
-            {
-                ["status"] = "ok",
-                ["count"] = 0
-            }
+            ok = false,
+            error = "species_guide_unavailable",
+            invocationId
         });
 
     private static JsonNode ParseNode(string? body)
