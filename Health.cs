@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LaughingFish.Mcp.Clients;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -89,7 +90,7 @@ public sealed class Health
             mcp = new
             {
                 serverName = "LaughingFish-Mcp",
-                serverVersion = "0.4.11",
+                serverVersion = "0.4.12",
                 transport = "streamable-http",
                 endpoint = "/runtime/webhooks/mcp"
             },
@@ -115,6 +116,7 @@ public sealed class Health
                 speciesGuideApiBound = _options.SpeciesGuideApiBound,
                 speciesGuideApiAudienceBound = _options.SpeciesGuideApiAudienceBound,
                 speciesGuideSettingPresent = SettingPresent("SpeciesGuideApiBaseUrl"),
+                speciesGuideBaseUrl = DescribeBaseUrl(),
                 pinRecentHours = _options.PinRecentHours,
                 weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
                 waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
@@ -130,4 +132,21 @@ public sealed class Health
         !string.IsNullOrWhiteSpace(_configuration[key])
         || !string.IsNullOrWhiteSpace(_configuration[$"Values:{key}"])
         || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key));
+
+    private object DescribeBaseUrl()
+    {
+        var raw = _configuration["SpeciesGuideApiBaseUrl"]
+            ?? _configuration["Values:SpeciesGuideApiBaseUrl"]
+            ?? Environment.GetEnvironmentVariable("SpeciesGuideApiBaseUrl")
+            ?? string.Empty;
+        var normalized = SpeciesGuideApiClient.NormalizeBaseUrl(raw);
+        return new
+        {
+            length = raw.Length,
+            firstChar = raw.Length == 0 ? 0 : (int)raw[0],
+            lastChar = raw.Length == 0 ? 0 : (int)raw[^1],
+            hasWhitespace = raw.Any(char.IsWhiteSpace),
+            parseOk = normalized is not null
+        };
+    }
 }

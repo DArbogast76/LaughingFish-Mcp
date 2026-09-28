@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using Azure.Core;
 using Azure.Identity;
 using LaughingFish.Mcp.Cache;
@@ -294,6 +295,10 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
         }
     }
 
+    private static readonly Regex EmbeddedHttpUrl = new(
+        @"https?://[^\s""'<>\u201C\u201D\u2018\u2019]+",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     internal static string? NormalizeBaseUrl(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
@@ -301,18 +306,61 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
             return null;
         }
 
-        var value = raw.Trim().Trim('"').Trim('\'');
+        var value = raw.Trim().Trim(
+            ' ',
+            '\t',
+            '\r',
+            '\n',
+            '"',
+            '\'',
+            '\uFEFF',
+            '\u200B',
+            '\u200C',
+            '\u200D',
+            '\u201C',
+            '\u201D',
+            '\u2018',
+            '\u2019');
         if (value.Length == 0)
         {
             return null;
         }
 
-        if (!value.Contains("://", StringComparison.Ordinal))
+        if (TryAbsoluteHttp(value, out var direct))
         {
-            value = "https://" + value.TrimStart('/');
+            return direct;
         }
 
-        return value.TrimEnd('/');
+        if (!value.Contains("://", StringComparison.Ordinal)
+            && TryAbsoluteHttp("https://" + value.TrimStart('/'), out var prefixed))
+        {
+            return prefixed;
+        }
+
+        var match = EmbeddedHttpUrl.Match(raw);
+        if (match.Success && TryAbsoluteHttp(match.Value.TrimEnd('/'), out var embedded))
+        {
+            return embedded;
+        }
+
+        return null;
+    }
+
+    private static bool TryAbsoluteHttp(string value, out string? normalized)
+    {
+        normalized = null;
+        if (!Uri.TryCreate(value.TrimEnd('/'), UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        if (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp)
+        {
+            return false;
+        }
+
+        normalized = uri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
+        return !string.IsNullOrWhiteSpace(normalized);
     }
 
     internal static string NormalizeSlug(string species)
