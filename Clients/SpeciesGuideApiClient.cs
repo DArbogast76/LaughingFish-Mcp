@@ -123,7 +123,8 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
         string invocationId,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.SpeciesGuideApiBaseUrl))
+        var baseUrl = NormalizeBaseUrl(_options.SpeciesGuideApiBaseUrl);
+        if (baseUrl is null)
         {
             _logger.LogWarning(
                 "SpeciesGuide client skipped. InvocationId={InvocationId} Operation={Operation} Reason=base_url_unbound",
@@ -137,13 +138,14 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
                 null);
         }
 
-        if (!Uri.TryCreate(_options.SpeciesGuideApiBaseUrl.Trim(), UriKind.Absolute, out var baseUri)
+        if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri)
             || (baseUri.Scheme != Uri.UriSchemeHttps && baseUri.Scheme != Uri.UriSchemeHttp))
         {
             _logger.LogWarning(
-                "SpeciesGuide client skipped. InvocationId={InvocationId} Operation={Operation} Reason=base_url_invalid",
+                "SpeciesGuide client skipped. InvocationId={InvocationId} Operation={Operation} Reason=base_url_invalid Length={Length}",
                 invocationId,
-                operation);
+                operation,
+                _options.SpeciesGuideApiBaseUrl.Trim().Length);
             return new SpeciesGuideApiResult(
                 0,
                 null,
@@ -163,7 +165,7 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
             return new SpeciesGuideApiResult(200, cached.Value, true, null, null);
         }
 
-        var url = $"{_options.SpeciesGuideApiBaseUrl.Trim().TrimEnd('/')}{pathAndQuery}";
+        var url = $"{baseUrl}{pathAndQuery}";
 
         string? accessToken = null;
         if (_options.SpeciesGuideApiAudienceBound)
@@ -290,6 +292,27 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
                 "species_guide_client_error",
                 null);
         }
+    }
+
+    internal static string? NormalizeBaseUrl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        var value = raw.Trim().Trim('"').Trim('\'');
+        if (value.Length == 0)
+        {
+            return null;
+        }
+
+        if (!value.Contains("://", StringComparison.Ordinal))
+        {
+            value = "https://" + value.TrimStart('/');
+        }
+
+        return value.TrimEnd('/');
     }
 
     internal static string NormalizeSlug(string species)
