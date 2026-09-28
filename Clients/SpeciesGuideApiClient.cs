@@ -137,6 +137,21 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
                 null);
         }
 
+        if (!Uri.TryCreate(_options.SpeciesGuideApiBaseUrl.Trim(), UriKind.Absolute, out var baseUri)
+            || (baseUri.Scheme != Uri.UriSchemeHttps && baseUri.Scheme != Uri.UriSchemeHttp))
+        {
+            _logger.LogWarning(
+                "SpeciesGuide client skipped. InvocationId={InvocationId} Operation={Operation} Reason=base_url_invalid",
+                invocationId,
+                operation);
+            return new SpeciesGuideApiResult(
+                0,
+                null,
+                false,
+                "species_guide_invalid_base_url",
+                null);
+        }
+
         var cached = await _cache.GetAsync(cacheKey, invocationId, cancellationToken).ConfigureAwait(false);
         if (cached.Hit && !string.IsNullOrWhiteSpace(cached.Value))
         {
@@ -148,7 +163,7 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
             return new SpeciesGuideApiResult(200, cached.Value, true, null, null);
         }
 
-        var url = $"{_options.SpeciesGuideApiBaseUrl.TrimEnd('/')}{pathAndQuery}";
+        var url = $"{_options.SpeciesGuideApiBaseUrl.Trim().TrimEnd('/')}{pathAndQuery}";
 
         string? accessToken = null;
         if (_options.SpeciesGuideApiAudienceBound)
@@ -259,6 +274,20 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
                 null,
                 false,
                 "species_guide_unreachable",
+                null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "SpeciesGuide client failed. InvocationId={InvocationId} Operation={Operation}",
+                invocationId,
+                operation);
+            return new SpeciesGuideApiResult(
+                0,
+                null,
+                false,
+                "species_guide_client_error",
                 null);
         }
     }

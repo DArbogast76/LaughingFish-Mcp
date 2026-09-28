@@ -13,7 +13,7 @@ public sealed class SearchSpeciesGuidesTool
 {
     public const string ToolName = "search_species_guides";
     public const string ToolDescription =
-        "How-to from one published species book. Use only when the user names a fish or asks about fishing that species. Required species (published name or slug; map nicknames first). Put the user's language in query. Optional published topic key and top 1-3 (default 3). Do not use this tool for a story, tale, or fiction; use get_chapter with topic fictional-story instead. Not live water or weather. Not regulations. Do not use for a boat, beach, or trip plan that does not mention a fish.";
+        "How-to and species facts from one published species book. Call this when the user names a fish or asks about that fish, including tell me about, what is, or how to catch. Required species (published name or slug; map nicknames first). Put the user's language in query. Optional published topic key and top 1-3 (default 3). Do not use this tool for a story, tale, or fiction; use get_chapter with topic fictional-story instead. Not live water or weather. Not regulations. Do not use for a boat, beach, or trip plan that does not mention a fish.";
 
     private readonly ILogger<SearchSpeciesGuidesTool> _logger;
     private readonly ISpeciesGuideToolService _service;
