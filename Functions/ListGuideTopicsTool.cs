@@ -13,7 +13,7 @@ public sealed class ListGuideTopicsTool
 {
     public const string ToolName = "list_guide_topics";
     public const string ToolDescription =
-        "Lists the 16 published Target Species topic keys and whether each is advice or fiction. Internal catalog only. Callers never know or choose topic keys. Do not invent keys. Does not return chapter text, live water, weather, or official regulations.";
+        "Lists published species-guide topic keys. Internal only. Use only when choosing a topic for a species-guide call. Do not call for a general boat, beach, or trip plan.";
 
     private readonly ILogger<ListGuideTopicsTool> _logger;
     private readonly ISpeciesGuideToolService _service;

@@ -13,7 +13,7 @@ public sealed class ListSpeciesTool
 {
     public const string ToolName = "list_species";
     public const string ToolDescription =
-        "Lists published Target Species books with speciesSlug, commonName, and bookTitle. Internal catalog when the named fish is ambiguous or a nickname must be mapped to a published name. Callers never see slugs. Does not return chapter text, live water, weather, or official regulations.";
+        "Lists published species books (slug, common name, title). Use only when a fish name is ambiguous. Do not call for a general boat, beach, or trip plan.";
 
     private readonly ILogger<ListSpeciesTool> _logger;
     private readonly ISpeciesGuideToolService _service;

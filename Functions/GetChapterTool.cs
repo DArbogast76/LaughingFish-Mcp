@@ -13,7 +13,7 @@ public sealed class GetChapterTool
 {
     public const string ToolName = "get_chapter";
     public const string ToolDescription =
-        "Returns one Target Species chapter by id (speciesSlug-topic) or by species plus an inferred published topic key. Full chapter body. Callers never know ids or topic keys; do not ask them for either. Not live water or weather. Not official regulations, seasons, or bag limits. Do not invent ids or topic keys. Do not present ids, slugs, or topic keys to the caller.";
+        "One species-guide chapter by id or by species plus topic. Use only when the user already needs that chapter. Not live water or weather. Do not call for a general boat, beach, or trip plan.";
 
     private readonly ILogger<GetChapterTool> _logger;
     private readonly ISpeciesGuideToolService _service;

@@ -13,7 +13,7 @@ public sealed class SearchSpeciesGuidesTool
 {
     public const string ToolName = "search_species_guides";
     public const string ToolDescription =
-        "Recreational how-to from one Target Species book. Required species is a published common name or slug. Map vernacular names first (Bull Reds → redfish). Put the user's own language in query. Callers never know topic keys; do not ask them for a topic. Optional topic is inferred and must be a published key: general, science, habitat-behavior, gear-tackle, techniques, hotspots, time-temperature, reading-water, tips-tricks, conservation, boat-control, electronics, related-media, sizes-records, consumption-recipes, fictional-story. Prefer query alone when the topic is uncertain. Optional top 1, 2, or 3 (default 3). One species per call. Fiction only when topic is fictional-story. Returns full chapter body. Not live water or weather. Not official regulations, seasons, or bag limits. Hotspot text is not a live report. Tackle lists are examples. Time and temperature text is association only, not a current reading. Do not invent species or topic keys. Do not present topic keys, slugs, or chapter ids to the caller.";
+        "How-to from one published species book. Use only when the user names a fish or asks about fishing that species. Required species (published name or slug; map nicknames first). Put the user's language in query. Optional published topic key and top 1-3 (default 3). Not live water or weather. Not regulations. Do not use for a boat, beach, or trip plan that does not mention a fish.";
 
     private readonly ILogger<SearchSpeciesGuidesTool> _logger;
     private readonly ISpeciesGuideToolService _service;
