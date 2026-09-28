@@ -44,12 +44,36 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.SunriseCacheTtlSeconds = ReadInt("SunriseCacheTtlSeconds", options.SunriseCacheTtlSeconds);
         options.MapsCacheTtlSeconds = ReadInt("MapsCacheTtlSeconds", options.MapsCacheTtlSeconds);
         options.SpeciesGuideCacheTtlSeconds = ReadInt("SpeciesGuideCacheTtlSeconds", options.SpeciesGuideCacheTtlSeconds);
+
+        _logger.LogInformation(
+            "MCP options bound. WaterTempApiBound={WaterTempApiBound} WeatherApiBound={WeatherApiBound} SunriseSunsetApiBound={SunriseSunsetApiBound} SpeciesGuideApiBound={SpeciesGuideApiBound}",
+            options.WaterTempApiBound,
+            options.WeatherApiBound,
+            options.SunriseSunsetApiBound,
+            options.SpeciesGuideApiBound);
     }
 
     private string ReadString(string key, string fallback)
     {
-        var raw = _configuration[key];
-        return string.IsNullOrWhiteSpace(raw) ? fallback : raw.Trim();
+        var raw = FirstNonEmpty(
+            _configuration[key],
+            _configuration[$"Values:{key}"],
+            Environment.GetEnvironmentVariable(key));
+
+        return raw ?? fallback;
+    }
+
+    private static string? FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
     }
 
     private int ReadInt(string key, int fallback)

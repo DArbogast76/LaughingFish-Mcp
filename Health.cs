@@ -3,6 +3,7 @@ using LaughingFish.Mcp.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -16,11 +17,13 @@ public sealed class Health
 {
     private readonly ILogger<Health> _logger;
     private readonly McpOptions _options;
+    private readonly IConfiguration _configuration;
 
-    public Health(ILogger<Health> logger, IOptions<McpOptions> options)
+    public Health(ILogger<Health> logger, IOptions<McpOptions> options, IConfiguration configuration)
     {
         _logger = logger;
         _options = options.Value;
+        _configuration = configuration;
     }
 
     [Function("Health")]
@@ -111,6 +114,7 @@ public sealed class Health
                 sunriseSunsetApiAudienceBound = _options.SunriseSunsetApiAudienceBound,
                 speciesGuideApiBound = _options.SpeciesGuideApiBound,
                 speciesGuideApiAudienceBound = _options.SpeciesGuideApiAudienceBound,
+                speciesGuideSettingPresent = SettingPresent("SpeciesGuideApiBaseUrl"),
                 pinRecentHours = _options.PinRecentHours,
                 weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
                 waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
@@ -121,4 +125,9 @@ public sealed class Health
             }
         };
     }
+
+    private bool SettingPresent(string key) =>
+        !string.IsNullOrWhiteSpace(_configuration[key])
+        || !string.IsNullOrWhiteSpace(_configuration[$"Values:{key}"])
+        || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key));
 }
