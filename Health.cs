@@ -86,7 +86,7 @@ public sealed class Health
             mcp = new
             {
                 serverName = "LaughingFish-Mcp",
-                serverVersion = "0.4.1",
+                serverVersion = "0.4.2",
                 transport = "streamable-http",
                 endpoint = "/runtime/webhooks/mcp"
             },
