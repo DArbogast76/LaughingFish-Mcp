@@ -19,6 +19,7 @@
     <Compile Include="Configuration\**\*.cs" />
     <Compile Include="Functions\**\*.cs" />
     <Compile Include="Location\**\*.cs" />
+    <Compile Include="Services\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

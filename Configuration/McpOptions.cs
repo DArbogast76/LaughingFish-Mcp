@@ -18,12 +18,15 @@ public sealed class McpOptions
     public int WeatherApiTimeoutSeconds { get; set; } = 90;
     public string SunriseSunsetApiBaseUrl { get; set; } = string.Empty;
     public string SunriseSunsetApiAudience { get; set; } = string.Empty;
+    public string SpeciesGuideApiBaseUrl { get; set; } = string.Empty;
+    public string SpeciesGuideApiAudience { get; set; } = string.Empty;
     public int PinRecentHours { get; set; } = 48;
     public int CacheDefaultTtlSeconds { get; set; } = 3600;
     public int WeatherCacheTtlSeconds { get; set; } = 3600;
     public int WaterTempCacheTtlSeconds { get; set; } = 3600;
     public int SunriseCacheTtlSeconds { get; set; } = 604800;
     public int MapsCacheTtlSeconds { get; set; } = 604800;
+    public int SpeciesGuideCacheTtlSeconds { get; set; } = 604800;
 
     public bool RedisHostBound => !string.IsNullOrWhiteSpace(RedisHost);
     public bool RedisUserBound => !string.IsNullOrWhiteSpace(RedisUser);
@@ -36,11 +39,14 @@ public sealed class McpOptions
     public bool WeatherApiAudienceBound => !string.IsNullOrWhiteSpace(WeatherApiAudience);
     public bool SunriseSunsetApiBound => !string.IsNullOrWhiteSpace(SunriseSunsetApiBaseUrl);
     public bool SunriseSunsetApiAudienceBound => !string.IsNullOrWhiteSpace(SunriseSunsetApiAudience);
+    public bool SpeciesGuideApiBound => !string.IsNullOrWhiteSpace(SpeciesGuideApiBaseUrl);
+    public bool SpeciesGuideApiAudienceBound => !string.IsNullOrWhiteSpace(SpeciesGuideApiAudience);
 
     public TimeSpan WeatherCacheTtl => Ttl(WeatherCacheTtlSeconds, 3600);
     public TimeSpan WaterTempCacheTtl => Ttl(WaterTempCacheTtlSeconds, 3600);
     public TimeSpan SunriseCacheTtl => Ttl(SunriseCacheTtlSeconds, 604800);
     public TimeSpan MapsCacheTtl => Ttl(MapsCacheTtlSeconds, 604800);
+    public TimeSpan SpeciesGuideCacheTtl => Ttl(SpeciesGuideCacheTtlSeconds, 604800);
     public TimeSpan DefaultCacheTtl => Ttl(CacheDefaultTtlSeconds, 3600);
 
     private static TimeSpan Ttl(int seconds, int fallback) =>

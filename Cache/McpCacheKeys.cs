@@ -33,6 +33,27 @@ public static class McpCacheKeys
     public static string Maps(string place) =>
         Format("maps", NormalizePlace(place));
 
+    public static string SpeciesGuideCatalog() => Format("sg", "species");
+
+    public static string SpeciesGuideTopics() => Format("sg", "topics");
+
+    public static string SpeciesGuideSearch(string slug, string? topic, string queryFingerprint, int top) =>
+        Format(
+            "sg",
+            "search",
+            Token(slug),
+            string.IsNullOrWhiteSpace(topic) ? "-" : Token(topic),
+            Token(queryFingerprint),
+            top.ToString(CultureInfo.InvariantCulture));
+
+    public static string SpeciesGuideChapter(string? id, string? slug, string? topic) =>
+        Format(
+            "sg",
+            "chapter",
+            string.IsNullOrWhiteSpace(id) ? "-" : Token(id),
+            string.IsNullOrWhiteSpace(slug) ? "-" : Token(slug),
+            string.IsNullOrWhiteSpace(topic) ? "-" : Token(topic));
+
     private static string Format(string service, params string[] parts) =>
         $"{Prefix}:{service}:{Version}:{string.Join(':', parts)}";
 

@@ -15,7 +15,7 @@ public sealed class ServerHealthTool
 {
     public const string ToolName = "server_health";
     public const string ToolDescription =
-        "Returns LaughingFish MCP host health and whether Redis, Maps, and API base URLs are bound. Does not fetch water temperature, weather, or sunrise/sunset.";
+        "Returns LaughingFish MCP host health and whether Redis, Maps, and API base URLs are bound. Does not fetch water temperature, weather, sunrise/sunset, or species guides.";
 
     private readonly ILogger<ServerHealthTool> _logger;
     private readonly McpOptions _options;
@@ -63,11 +63,14 @@ public sealed class ServerHealthTool
                     weatherApiAudienceBound = _options.WeatherApiAudienceBound,
                     sunriseSunsetApiBound = _options.SunriseSunsetApiBound,
                     sunriseSunsetApiAudienceBound = _options.SunriseSunsetApiAudienceBound,
+                    speciesGuideApiBound = _options.SpeciesGuideApiBound,
+                    speciesGuideApiAudienceBound = _options.SpeciesGuideApiAudienceBound,
                     pinRecentHours = _options.PinRecentHours,
                     weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
                     waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
                     sunriseCacheTtlSeconds = (int)_options.SunriseCacheTtl.TotalSeconds,
                     mapsCacheTtlSeconds = (int)_options.MapsCacheTtl.TotalSeconds,
+                    speciesGuideCacheTtlSeconds = (int)_options.SpeciesGuideCacheTtl.TotalSeconds,
                     cacheDefaultTtlSeconds = (int)_options.DefaultCacheTtl.TotalSeconds
                 }
             };

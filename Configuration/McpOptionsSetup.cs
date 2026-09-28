@@ -33,6 +33,8 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.WeatherApiAudience = ReadString("WeatherApiAudience", options.WeatherApiAudience);
         options.SunriseSunsetApiBaseUrl = ReadString("SunriseSunsetApiBaseUrl", options.SunriseSunsetApiBaseUrl);
         options.SunriseSunsetApiAudience = ReadString("SunriseSunsetApiAudience", options.SunriseSunsetApiAudience);
+        options.SpeciesGuideApiBaseUrl = ReadString("SpeciesGuideApiBaseUrl", options.SpeciesGuideApiBaseUrl);
+        options.SpeciesGuideApiAudience = ReadString("SpeciesGuideApiAudience", options.SpeciesGuideApiAudience);
 
         options.WeatherApiTimeoutSeconds = ReadInt("WeatherApiTimeoutSeconds", options.WeatherApiTimeoutSeconds);
         options.PinRecentHours = ReadInt("PinRecentHours", options.PinRecentHours);
@@ -41,6 +43,7 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.WaterTempCacheTtlSeconds = ReadInt("WaterTempCacheTtlSeconds", options.WaterTempCacheTtlSeconds);
         options.SunriseCacheTtlSeconds = ReadInt("SunriseCacheTtlSeconds", options.SunriseCacheTtlSeconds);
         options.MapsCacheTtlSeconds = ReadInt("MapsCacheTtlSeconds", options.MapsCacheTtlSeconds);
+        options.SpeciesGuideCacheTtlSeconds = ReadInt("SpeciesGuideCacheTtlSeconds", options.SpeciesGuideCacheTtlSeconds);
     }
 
     private string ReadString(string key, string fallback)

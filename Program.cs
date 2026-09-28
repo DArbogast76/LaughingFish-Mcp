@@ -4,6 +4,7 @@ using LaughingFish.Mcp.Cache;
 using LaughingFish.Mcp.Clients;
 using LaughingFish.Mcp.Configuration;
 using LaughingFish.Mcp.Location;
+using LaughingFish.Mcp.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Azure.Functions.Worker.OpenTelemetry;
@@ -41,6 +42,8 @@ builder.Services.AddSingleton<IMcpCache>(sp =>
 builder.Services.AddHttpClient<ISunriseSunsetApiClient, SunriseSunsetApiClient>();
 builder.Services.AddHttpClient<IWeatherApiClient, WeatherApiClient>();
 builder.Services.AddHttpClient<IWaterTempApiClient, WaterTempApiClient>();
+builder.Services.AddHttpClient<ISpeciesGuideApiClient, SpeciesGuideApiClient>();
+builder.Services.AddSingleton<ISpeciesGuideToolService, SpeciesGuideToolService>();
 builder.Services.AddHttpClient<ILocationResolver, AzureMapsLocationResolver>();
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
