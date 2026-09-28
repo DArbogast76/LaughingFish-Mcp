@@ -134,7 +134,7 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
                 null,
                 false,
                 "species_guide_unbound",
-                "SpeciesGuideApiBaseUrl is not configured.");
+                null);
         }
 
         var cached = await _cache.GetAsync(cacheKey, invocationId, cancellationToken).ConfigureAwait(false);
@@ -182,7 +182,7 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
                     null,
                     false,
                     "species_guide_token_failed",
-                    "Could not acquire a token for the Species Guide API.");
+                    null);
             }
         }
         else
@@ -229,7 +229,7 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
                     response.StatusCode == System.Net.HttpStatusCode.NotFound
                         ? "species_guide_not_found"
                         : "species_guide_http_error",
-                    $"Species Guide API returned {(int)response.StatusCode}.");
+                    null);
             }
 
             await _cache.SetAsync(cacheKey, body, _options.SpeciesGuideCacheTtl, invocationId, cancellationToken)
@@ -245,7 +245,7 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
                 operation,
                 sendStarted.ElapsedMilliseconds,
                 cancellationToken.IsCancellationRequested);
-            return new SpeciesGuideApiResult(0, null, false, "species_guide_timeout", "Species Guide API timed out.");
+            return new SpeciesGuideApiResult(0, null, false, "species_guide_timeout", null);
         }
         catch (HttpRequestException ex)
         {
@@ -259,7 +259,7 @@ public sealed class SpeciesGuideApiClient : ISpeciesGuideApiClient
                 null,
                 false,
                 "species_guide_unreachable",
-                "Species Guide API could not be reached.");
+                null);
         }
     }
 

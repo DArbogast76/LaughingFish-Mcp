@@ -32,7 +32,7 @@ public sealed class SpeciesGuideToolService : ISpeciesGuideToolService
         CancellationToken cancellationToken)
     {
         var result = await _client.ListSpeciesAsync(invocationId, cancellationToken).ConfigureAwait(false);
-        return SpeciesGuideToolResult.FromApi(result, _options, invocationId);
+        return Wrap(result, "species", invocationId);
     }
 
     public async Task<SpeciesGuideToolResult> ListTopicsAsync(
@@ -40,7 +40,7 @@ public sealed class SpeciesGuideToolService : ISpeciesGuideToolService
         CancellationToken cancellationToken)
     {
         var result = await _client.ListTopicsAsync(invocationId, cancellationToken).ConfigureAwait(false);
-        return SpeciesGuideToolResult.FromApi(result, _options, invocationId);
+        return Wrap(result, "topics", invocationId);
     }
 
     public async Task<SpeciesGuideToolResult> SearchAsync(
@@ -92,7 +92,7 @@ public sealed class SpeciesGuideToolService : ISpeciesGuideToolService
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return SpeciesGuideToolResult.FromApi(result, _options, invocationId);
+        return Wrap(result, "search", invocationId);
     }
 
     public async Task<SpeciesGuideToolResult> GetChapterAsync(
@@ -132,7 +132,24 @@ public sealed class SpeciesGuideToolService : ISpeciesGuideToolService
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return SpeciesGuideToolResult.FromApi(result, _options, invocationId);
+        return Wrap(result, "chapter", invocationId);
+    }
+
+    private SpeciesGuideToolResult Wrap(SpeciesGuideApiResult result, string operation, string invocationId)
+    {
+        if (!result.IsSuccess)
+        {
+            _logger.LogWarning(
+                "SpeciesGuide downstream unsuccessful. InvocationId={InvocationId} Operation={Operation} Error={Error} StatusCode={StatusCode} ApiBound={ApiBound} AudienceBound={AudienceBound}",
+                invocationId,
+                operation,
+                result.ErrorCode,
+                result.StatusCode,
+                _options.SpeciesGuideApiBound,
+                _options.SpeciesGuideApiAudienceBound);
+        }
+
+        return SpeciesGuideToolResult.FromApi(result, invocationId);
     }
 
     private static bool TryResolveTop(int? top, out int resolved)
