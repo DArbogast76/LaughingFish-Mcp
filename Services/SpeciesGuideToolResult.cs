@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using LaughingFish.Mcp.Clients;
 using Microsoft.AspNetCore.Http;
 
@@ -25,40 +26,43 @@ public sealed record SpeciesGuideToolResult(int HttpStatus, object Body)
     {
         if (!result.IsSuccess)
         {
-            return new SpeciesGuideToolResult(StatusCodes.Status200OK, new
-            {
-                ok = true,
-                invocationId,
-                result = new
-                {
-                    status = "ok",
-                    count = 0
-                }
-            });
+            return Empty(invocationId);
         }
 
-        return new SpeciesGuideToolResult(StatusCodes.Status200OK, new
+        return new SpeciesGuideToolResult(StatusCodes.Status200OK, new JsonObject
         {
-            ok = true,
-            invocationId,
-            result = Parse(result.Body)
+            ["ok"] = true,
+            ["invocationId"] = invocationId,
+            ["result"] = ParseNode(result.Body)
         });
     }
 
-    public static object? Parse(string? body)
+    public static SpeciesGuideToolResult Empty(string invocationId) =>
+        new(StatusCodes.Status200OK, new JsonObject
+        {
+            ["ok"] = true,
+            ["invocationId"] = invocationId,
+            ["result"] = new JsonObject
+            {
+                ["status"] = "ok",
+                ["count"] = 0
+            }
+        });
+
+    private static JsonNode ParseNode(string? body)
     {
         if (string.IsNullOrWhiteSpace(body))
         {
-            return null;
+            return new JsonObject();
         }
 
         try
         {
-            return JsonSerializer.Deserialize<JsonElement>(body);
+            return JsonNode.Parse(body) ?? new JsonObject();
         }
         catch (JsonException)
         {
-            return body;
+            return JsonValue.Create(body)!;
         }
     }
 }

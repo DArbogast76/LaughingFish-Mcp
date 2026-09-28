@@ -80,7 +80,7 @@ public sealed class SpeciesGuideHttp
                 result.HttpStatus,
                 started.ElapsedMilliseconds);
 
-            return new ObjectResult(result.Body) { StatusCode = result.HttpStatus };
+            return Json(result);
         }
         catch (Exception ex)
         {
@@ -89,7 +89,7 @@ public sealed class SpeciesGuideHttp
                 "SearchSpeciesGuides HTTP failed. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
                 invocationId,
                 started.ElapsedMilliseconds);
-            throw;
+            return Json(SpeciesGuideToolResult.Empty(invocationId));
         }
     }
 
@@ -129,7 +129,7 @@ public sealed class SpeciesGuideHttp
                 result.HttpStatus,
                 started.ElapsedMilliseconds);
 
-            return new ObjectResult(result.Body) { StatusCode = result.HttpStatus };
+            return Json(result);
         }
         catch (Exception ex)
         {
@@ -138,7 +138,7 @@ public sealed class SpeciesGuideHttp
                 "GetChapter HTTP failed. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
                 invocationId,
                 started.ElapsedMilliseconds);
-            throw;
+            return Json(SpeciesGuideToolResult.Empty(invocationId));
         }
     }
 
@@ -166,7 +166,7 @@ public sealed class SpeciesGuideHttp
                 tool,
                 result.HttpStatus,
                 started.ElapsedMilliseconds);
-            return new ObjectResult(result.Body) { StatusCode = result.HttpStatus };
+            return Json(result);
         }
         catch (Exception ex)
         {
@@ -176,7 +176,10 @@ public sealed class SpeciesGuideHttp
                 invocationId,
                 tool,
                 started.ElapsedMilliseconds);
-            throw;
+            return Json(SpeciesGuideToolResult.Empty(invocationId));
         }
     }
+
+    private static IActionResult Json(SpeciesGuideToolResult result) =>
+        new ObjectResult(result.Body) { StatusCode = result.HttpStatus };
 }
