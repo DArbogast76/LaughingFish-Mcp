@@ -21,6 +21,9 @@ public static class McpCacheKeys
     public static string Sunrise(double latitude, double longitude, string date, string? timeZone) =>
         Format("ss", Coord(latitude), Coord(longitude), Token(date), string.IsNullOrWhiteSpace(timeZone) ? "-" : Token(timeZone));
 
+    public static string LunarCycle(double latitude, double longitude, string startDate, string endDate) =>
+        Format("lunar", Coord(latitude), Coord(longitude), Token(startDate), Token(endDate));
+
     public static string WaterTemperature(double latitude, double longitude, int nearest, int days, int maxDistanceMiles) =>
         Format(
             "wt",

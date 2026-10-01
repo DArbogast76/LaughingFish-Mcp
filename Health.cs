@@ -90,7 +90,7 @@ public sealed class Health
             mcp = new
             {
                 serverName = "LaughingFish-Mcp",
-                serverVersion = "0.4.13",
+                serverVersion = "0.4.14",
                 transport = "streamable-http",
                 endpoint = "/runtime/webhooks/mcp"
             },
@@ -99,7 +99,8 @@ public sealed class Health
                 listSpecies = "/api/v1/tools/list-species",
                 listGuideTopics = "/api/v1/tools/list-guide-topics",
                 searchSpeciesGuides = "/api/v1/tools/search-species-guides",
-                getChapter = "/api/v1/tools/get-chapter"
+                getChapter = "/api/v1/tools/get-chapter",
+                getLunarCycle = "/api/v1/tools/get-lunar-cycle"
             },
             settings = new
             {
@@ -117,12 +118,15 @@ public sealed class Health
                 speciesGuideApiAudienceBound = _options.SpeciesGuideApiAudienceBound,
                 speciesGuideSettingPresent = SettingPresent("SpeciesGuideApiBaseUrl"),
                 speciesGuideBaseUrl = DescribeBaseUrl(),
+                lunarCycleApiBound = _options.LunarCycleApiBound,
+                lunarCycleApiAudienceBound = _options.LunarCycleApiAudienceBound,
                 pinRecentHours = _options.PinRecentHours,
                 weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
                 waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
                 sunriseCacheTtlSeconds = (int)_options.SunriseCacheTtl.TotalSeconds,
                 mapsCacheTtlSeconds = (int)_options.MapsCacheTtl.TotalSeconds,
                 speciesGuideCacheTtlSeconds = (int)_options.SpeciesGuideCacheTtl.TotalSeconds,
+                lunarCycleCacheTtlSeconds = (int)_options.LunarCycleCacheTtl.TotalSeconds,
                 cacheDefaultTtlSeconds = (int)_options.DefaultCacheTtl.TotalSeconds
             }
         };

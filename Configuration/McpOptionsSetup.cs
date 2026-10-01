@@ -35,6 +35,8 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.SunriseSunsetApiAudience = ReadString("SunriseSunsetApiAudience", options.SunriseSunsetApiAudience);
         options.SpeciesGuideApiBaseUrl = ReadString("SpeciesGuideApiBaseUrl", options.SpeciesGuideApiBaseUrl);
         options.SpeciesGuideApiAudience = ReadString("SpeciesGuideApiAudience", options.SpeciesGuideApiAudience);
+        options.LunarCycleApiBaseUrl = ReadString("LunarCycleApiBaseUrl", options.LunarCycleApiBaseUrl);
+        options.LunarCycleApiAudience = ReadString("LunarCycleApiAudience", options.LunarCycleApiAudience);
 
         options.WeatherApiTimeoutSeconds = ReadInt("WeatherApiTimeoutSeconds", options.WeatherApiTimeoutSeconds);
         options.PinRecentHours = ReadInt("PinRecentHours", options.PinRecentHours);
