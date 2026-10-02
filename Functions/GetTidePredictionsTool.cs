@@ -42,8 +42,10 @@ public sealed class GetTidePredictionsTool
         [McpToolProperty("place", "Place name, city, or address. Preferred over raw coordinates.", false)] string? place,
         [McpToolProperty("latitude", "Latitude in decimal degrees when place is not provided.", false)] double? latitude,
         [McpToolProperty("longitude", "Longitude in decimal degrees when place is not provided.", false)] double? longitude,
-        [McpToolProperty("start", "Window start yyyy-MM-dd. Defaults to today when omitted.", false)] string? start,
-        [McpToolProperty("end", "Window end yyyy-MM-dd, inclusive. Defaults to start. At most 31 days.", false)] string? end,
+        [McpToolProperty("start", "Window start. yyyy-MM-dd. Defaults to today when omitted.", false)] string? start,
+        [McpToolProperty("end", "Window end. yyyy-MM-dd, inclusive. Defaults to start. At most 31 days.", false)] string? end,
+        [McpToolProperty("startDate", "Same as start. yyyy-MM-dd.", false)] string? startDate,
+        [McpToolProperty("endDate", "Same as end. yyyy-MM-dd, inclusive.", false)] string? endDate,
         [McpToolProperty("nearest", "How many in-range stations to return. Allowed: 1, 3, 5. Default 1.", false)] int? nearest,
         [McpToolProperty("maxDistanceMiles", "Maximum station distance in miles. Allowed: 10, 25, 50. Default 25.", false)] int? maxDistanceMiles,
         FunctionContext functionContext)
@@ -51,7 +53,7 @@ public sealed class GetTidePredictionsTool
         var started = Stopwatch.StartNew();
         var invocationId = functionContext.InvocationId;
         _logger.LogInformation(
-            "GetTidePredictions tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Start={Start} End={End} Nearest={Nearest} MaxDistanceMiles={MaxDistanceMiles}",
+            "GetTidePredictions tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Start={Start} End={End} StartDate={StartDate} EndDate={EndDate} Nearest={Nearest} MaxDistanceMiles={MaxDistanceMiles}",
             invocationId,
             context.Name,
             context.SessionId,
@@ -60,6 +62,8 @@ public sealed class GetTidePredictionsTool
             longitude,
             start,
             end,
+            startDate,
+            endDate,
             nearest,
             maxDistanceMiles);
 
@@ -71,6 +75,8 @@ public sealed class GetTidePredictionsTool
                 longitude,
                 start,
                 end,
+                startDate,
+                endDate,
                 nearest,
                 maxDistanceMiles,
                 invocationId,
@@ -99,6 +105,8 @@ public sealed class GetTidePredictionsTool
         double? longitude,
         string? start,
         string? end,
+        string? startDate,
+        string? endDate,
         int? nearest,
         int? maxDistanceMiles,
         string invocationId,
@@ -114,8 +122,18 @@ public sealed class GetTidePredictionsTool
             return Error("invalid_max_distance", "maxDistanceMiles must be 10, 25, or 50.", invocationId);
         }
 
-        if (!TryResolveWindow(start, end, out var resolvedStart, out var resolvedEnd, out var windowError))
+        var windowStart = FirstNonEmpty(start, startDate);
+        var windowEnd = FirstNonEmpty(end, endDate);
+        if (!TryResolveWindow(windowStart, windowEnd, out var resolvedStart, out var resolvedEnd, out var windowError))
         {
+            _logger.LogInformation(
+                "GetTidePredictions window rejected. InvocationId={InvocationId} Start={Start} End={End} StartDate={StartDate} EndDate={EndDate} Error={Error}",
+                invocationId,
+                start,
+                end,
+                startDate,
+                endDate,
+                windowError);
             return Error("invalid_window", windowError, invocationId);
         }
 
@@ -218,11 +236,11 @@ public sealed class GetTidePredictionsTool
     {
         resolvedStart = string.Empty;
         resolvedEnd = string.Empty;
-        error = "start and end must be yyyy-MM-dd.";
+        error = WindowError(start, end);
 
-        var hasStart = !string.IsNullOrWhiteSpace(start);
-        var hasEnd = !string.IsNullOrWhiteSpace(end);
-        if (!hasStart && !hasEnd)
+        var startDates = ReadDates(start);
+        var endDates = ReadDates(end);
+        if (startDates.Count == 0 && endDates.Count == 0)
         {
             var today = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             resolvedStart = today;
@@ -231,19 +249,24 @@ public sealed class GetTidePredictionsTool
             return true;
         }
 
-        if (!TryNormalizeBound(hasStart ? start : end, out resolvedStart, out error))
+        if (startDates.Count >= 2 && endDates.Count == 0)
         {
-            return false;
+            endDates = [startDates[^1]];
+            startDates = [startDates[0]];
         }
 
-        if (!TryNormalizeBound(hasEnd ? end : start, out resolvedEnd, out error))
+        if (startDates.Count == 0 || endDates.Count == 0)
         {
-            return false;
+            var only = startDates.Count > 0 ? startDates[0] : endDates[0];
+            startDates = [only];
+            endDates = [only];
         }
 
-        if (!TryReadDate(resolvedStart, out var startDay) || !TryReadDate(resolvedEnd, out var endDay))
+        var startDay = startDates[0];
+        var endDay = endDates[0];
+        if (startDay.Year is < 1900 or > 2100 || endDay.Year is < 1900 or > 2100)
         {
-            error = "start and end must be yyyy-MM-dd.";
+            error = "date year must be between 1900 and 2100.";
             return false;
         }
 
@@ -259,58 +282,87 @@ public sealed class GetTidePredictionsTool
             return false;
         }
 
+        resolvedStart = startDay.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        resolvedEnd = endDay.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         error = string.Empty;
         return true;
     }
 
-    private static bool TryNormalizeBound(string? raw, out string formatted, out string error)
+    private static List<DateOnly> ReadDates(string? raw)
     {
-        formatted = string.Empty;
-        error = "start and end must be yyyy-MM-dd.";
+        var found = new List<DateOnly>();
         if (string.IsNullOrWhiteSpace(raw))
         {
-            return false;
+            return found;
         }
 
-        var trimmed = raw.Trim().Trim('"');
-        if (!TryReadDate(trimmed, out var parsed))
+        var trimmed = raw.Trim().Trim('"', '\'', '`', '\u201C', '\u201D', '\u2018', '\u2019');
+        for (var i = 0; i + 10 <= trimmed.Length; i++)
         {
-            return false;
+            if (trimmed[i + 4] != '-' || trimmed[i + 7] != '-')
+            {
+                continue;
+            }
+
+            if (DateOnly.TryParseExact(trimmed.Substring(i, 10), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var embedded))
+            {
+                found.Add(embedded);
+                i += 9;
+            }
         }
 
-        if (parsed.Year is < 1900 or > 2100)
+        if (found.Count > 0)
         {
-            error = "date year must be between 1900 and 2100.";
-            return false;
+            return found;
         }
 
-        formatted = parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        error = string.Empty;
-        return true;
-    }
-
-    private static bool TryReadDate(string trimmed, out DateOnly parsed)
-    {
-        if (trimmed.Length >= 10
-            && trimmed[4] == '-'
-            && DateOnly.TryParseExact(trimmed[..10], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsed))
+        if (trimmed.Length >= 8
+            && trimmed[..8].All(char.IsDigit)
+            && DateOnly.TryParseExact(trimmed[..8], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var compact))
         {
-            return true;
+            found.Add(compact);
+            return found;
         }
 
         if (DateOnly.TryParseExact(
                 trimmed,
-                ["yyyy-MM-dd", "yyyy-M-d", "M/d/yyyy", "MM/dd/yyyy"],
+                ["yyyy-MM-dd", "yyyy-M-d", "M/d/yyyy", "MM/dd/yyyy", "M-d-yyyy", "MM-dd-yyyy"],
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.None,
-                out parsed))
+                out var exact))
         {
-            return true;
+            found.Add(exact);
+            return found;
         }
 
-        parsed = default;
-        return false;
+        if (DateTime.TryParse(trimmed, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var dateTime))
+        {
+            found.Add(DateOnly.FromDateTime(dateTime));
+        }
+
+        return found;
     }
+
+    private static string WindowError(string? start, string? end) =>
+        "start and end must contain a date, yyyy-MM-dd. Received start='"
+        + Snip(start)
+        + "' end='"
+        + Snip(end)
+        + "'.";
+
+    private static string Snip(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= 80 ? trimmed : trimmed[..80];
+    }
+
+    private static string? FirstNonEmpty(string? first, string? second) =>
+        !string.IsNullOrWhiteSpace(first) ? first : second;
 
     private static bool TryResolveInt(int? value, int[] allowed, int fallback, out int resolved)
     {

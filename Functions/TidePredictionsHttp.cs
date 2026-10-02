@@ -35,8 +35,8 @@ public sealed class TidePredictionsHttp
         {
             var values = await ToolHttpRequest.ReadAsync(req, context.CancellationToken).ConfigureAwait(false);
             var place = ToolHttpRequest.ReadString(values, "place");
-            var start = ToolHttpRequest.ReadString(values, "start");
-            var end = ToolHttpRequest.ReadString(values, "end");
+            var start = ToolHttpRequest.ReadString(values, "start") ?? ToolHttpRequest.ReadString(values, "startDate");
+            var end = ToolHttpRequest.ReadString(values, "end") ?? ToolHttpRequest.ReadString(values, "endDate");
             var latitude = ReadDouble(values, "latitude") ?? ReadDouble(values, "lat");
             var longitude = ReadDouble(values, "longitude") ?? ReadDouble(values, "lon");
             var nearest = ReadInt(values, "nearest");
@@ -60,6 +60,8 @@ public sealed class TidePredictionsHttp
                 longitude,
                 start,
                 end,
+                null,
+                null,
                 nearest,
                 maxDistanceMiles,
                 invocationId,
