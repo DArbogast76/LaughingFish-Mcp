@@ -18,7 +18,7 @@ public sealed class GetWaterTemperatureTool
 {
     public const string ToolName = "get_water_temperature";
     public const string ToolDescription =
-        "Observed water temperature: current reading and hourly history for trend (warming, cooling, or steady). Days is lookback, not a forecast. Pass place (preferred) or latitude and longitude. Optional nearest 1, 3, or 5 (default 1). Optional days 1, 3, 7, 30, or 90 (default 1). Optional maxDistanceMiles 10, 25, or 50 (default 25). Returns no station when none is within range. Does not forecast water temperature and does not return air weather or sunrise. Do not invent a temperature when Maps or the API fails.";
+        "Observed hourly water temperature near a U.S. place or latitude and longitude. This is measurement history, not a forecast and not air temperature. Returns the nearest stations inside maxDistanceMiles that have a reading in the lookback window, with current temperature, coverage, and hourly history. Optional nearest 1, 3, or 5 (default 1). Optional days 1, 3, 7, 30, or 90 (default 1); days is lookback. Optional maxDistanceMiles 10, 25, or 50 (default 25). status no_station_within_range means none was inside the radius. Does not forecast water temperature and does not return air temperature, tides, or wind. Do not invent a temperature when the place cannot be resolved or the request fails.";
 
     private static readonly int[] AllowedNearest = [1, 3, 5];
     private static readonly int[] AllowedDays = [1, 3, 7, 30, 90];

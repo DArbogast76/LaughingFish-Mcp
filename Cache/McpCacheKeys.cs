@@ -43,6 +43,7 @@ public static class McpCacheKeys
     public static string WaterTemperature(double latitude, double longitude, int nearest, int days, int maxDistanceMiles) =>
         Format(
             "wt",
+            "expl1",
             Coord(latitude),
             Coord(longitude),
             nearest.ToString(CultureInfo.InvariantCulture),

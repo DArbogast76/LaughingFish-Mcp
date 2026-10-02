@@ -199,8 +199,13 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
                 }
             }
 
+            var explanation = ReadObject(root, "explanation") ?? ReadObject(root, "Explanation");
             var shaped = new JsonObject
             {
+                ["schema"] = ReadString(root, "schema") ?? ReadString(root, "Schema") ?? "laughingfish.waterTemperature.v1",
+                ["explanation"] = explanation.HasValue
+                    ? JsonNode.Parse(explanation.Value.GetRawText())
+                    : null,
                 ["status"] = status,
                 ["stationCount"] = stationCount,
                 ["request"] = requestNode.HasValue
