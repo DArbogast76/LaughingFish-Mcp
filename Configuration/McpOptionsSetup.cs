@@ -37,6 +37,8 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.SpeciesGuideApiAudience = ReadString("SpeciesGuideApiAudience", options.SpeciesGuideApiAudience);
         options.LunarCycleApiBaseUrl = ReadString("LunarCycleApiBaseUrl", options.LunarCycleApiBaseUrl);
         options.LunarCycleApiAudience = ReadString("LunarCycleApiAudience", options.LunarCycleApiAudience);
+        options.TideApiBaseUrl = ReadString("TideApiBaseUrl", options.TideApiBaseUrl);
+        options.TideApiAudience = ReadString("TideApiAudience", options.TideApiAudience);
 
         options.WeatherApiTimeoutSeconds = ReadInt("WeatherApiTimeoutSeconds", options.WeatherApiTimeoutSeconds);
         options.PinRecentHours = ReadInt("PinRecentHours", options.PinRecentHours);
@@ -46,13 +48,18 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.SunriseCacheTtlSeconds = ReadInt("SunriseCacheTtlSeconds", options.SunriseCacheTtlSeconds);
         options.MapsCacheTtlSeconds = ReadInt("MapsCacheTtlSeconds", options.MapsCacheTtlSeconds);
         options.SpeciesGuideCacheTtlSeconds = ReadInt("SpeciesGuideCacheTtlSeconds", options.SpeciesGuideCacheTtlSeconds);
+        options.LunarCycleCacheTtlSeconds = ReadInt("LunarCycleCacheTtlSeconds", options.LunarCycleCacheTtlSeconds);
+        options.TideCacheTtlSeconds = ReadInt("TideCacheTtlSeconds", options.TideCacheTtlSeconds);
 
         _logger.LogInformation(
-            "MCP options bound. WaterTempApiBound={WaterTempApiBound} WeatherApiBound={WeatherApiBound} SunriseSunsetApiBound={SunriseSunsetApiBound} SpeciesGuideApiBound={SpeciesGuideApiBound}",
+            "MCP options bound. WaterTempApiBound={WaterTempApiBound} WeatherApiBound={WeatherApiBound} SunriseSunsetApiBound={SunriseSunsetApiBound} SpeciesGuideApiBound={SpeciesGuideApiBound} LunarCycleApiBound={LunarCycleApiBound} TideApiBound={TideApiBound} TideApiAudienceBound={TideApiAudienceBound}",
             options.WaterTempApiBound,
             options.WeatherApiBound,
             options.SunriseSunsetApiBound,
-            options.SpeciesGuideApiBound);
+            options.SpeciesGuideApiBound,
+            options.LunarCycleApiBound,
+            options.TideApiBound,
+            options.TideApiAudienceBound);
     }
 
     private string ReadString(string key, string fallback)

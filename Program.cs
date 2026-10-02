@@ -44,8 +44,10 @@ builder.Services.AddHttpClient<IWeatherApiClient, WeatherApiClient>();
 builder.Services.AddHttpClient<IWaterTempApiClient, WaterTempApiClient>();
 builder.Services.AddHttpClient<ISpeciesGuideApiClient, SpeciesGuideApiClient>();
 builder.Services.AddHttpClient<ILunarCycleApiClient, LunarCycleApiClient>();
+builder.Services.AddHttpClient<ITideApiClient, TideApiClient>();
 builder.Services.AddSingleton<ISpeciesGuideToolService, SpeciesGuideToolService>();
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetLunarCycleTool>();
+builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetTidePredictionsTool>();
 builder.Services.AddHttpClient<ILocationResolver, AzureMapsLocationResolver>();
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>

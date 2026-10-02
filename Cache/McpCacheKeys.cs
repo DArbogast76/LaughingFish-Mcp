@@ -24,6 +24,22 @@ public static class McpCacheKeys
     public static string LunarCycle(double latitude, double longitude, string startDate, string endDate) =>
         Format("lunar", Coord(latitude), Coord(longitude), Token(startDate), Token(endDate));
 
+    public static string TidePredictions(
+        double latitude,
+        double longitude,
+        string start,
+        string end,
+        int nearest,
+        int maxDistanceMiles) =>
+        Format(
+            "tide",
+            Coord(latitude),
+            Coord(longitude),
+            Token(start),
+            Token(end),
+            nearest.ToString(CultureInfo.InvariantCulture),
+            maxDistanceMiles.ToString(CultureInfo.InvariantCulture));
+
     public static string WaterTemperature(double latitude, double longitude, int nearest, int days, int maxDistanceMiles) =>
         Format(
             "wt",
