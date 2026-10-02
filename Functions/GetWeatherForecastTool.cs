@@ -18,7 +18,7 @@ public sealed class GetWeatherForecastTool
 {
     public const string ToolName = "get_weather_forecast";
     public const string ToolDescription =
-        "Hourly air weather forecast: temperature, rain, wind, humidity, sky cover, and conditions. Pass place (preferred) or latitude and longitude. Optional hours 24, 48, or 72, or days 1, 3, or 7. Default 24 hours. Does not return sunrise, sunset, or water temperature. Do not invent forecasts when Maps or the API fails.";
+        "Hourly National Weather Service grid forecast for a U.S. place or latitude and longitude. This is a forecast, not current conditions and not a station observation. Each hour may include temperature, dewpoint, apparent temperature, heat index, wind chill, humidity, sky cover, visibility, ceiling, wind speed, gust, and direction, precipitation chance and amounts, weather text, and marine waves. A field is omitted when that hour has no value. Optional hours 24, 48, or 72, or days 1, 3, or 7. Default 24 hours. Does not return air pressure, UV, or observed wind. Do not invent a forecast when the place cannot be resolved or the forecast request fails.";
 
     private static readonly int[] AllowedHours = [24, 48, 72];
     private static readonly int[] AllowedDays = [1, 3, 7];
