@@ -66,7 +66,7 @@ public sealed class TideApiClient : ITideApiClient
 
         var cacheKey = McpCacheKeys.TidePredictions(latitude, longitude, start, end, nearest, maxDistanceMiles);
         var cached = await _cache.GetAsync(cacheKey, invocationId, cancellationToken).ConfigureAwait(false);
-        if (cached is not null)
+        if (cached.Hit && !string.IsNullOrWhiteSpace(cached.Value))
         {
             _logger.LogInformation(
                 "Tide client cache hit. InvocationId={InvocationId} Key={Key}",
@@ -158,6 +158,15 @@ public sealed class TideApiClient : ITideApiClient
                         ? "tide_predictions_not_found"
                         : "tide_predictions_http_error",
                     null);
+            }
+
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                _logger.LogWarning(
+                    "Tide client empty success body. InvocationId={InvocationId} StatusCode={StatusCode}",
+                    invocationId,
+                    (int)response.StatusCode);
+                return new TideApiResult((int)response.StatusCode, body, false, "tide_predictions_empty", null);
             }
 
             await _cache.SetAsync(cacheKey, body, _options.TideCacheTtl, invocationId, cancellationToken)
