@@ -44,6 +44,7 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
         int nearest,
         int days,
         int maxDistanceMiles,
+        bool includeChart,
         string invocationId,
         CancellationToken cancellationToken)
     {
@@ -60,7 +61,7 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
                 "WaterTempApiBaseUrl is not configured.");
         }
 
-        var cacheKey = McpCacheKeys.WaterTemperature(latitude, longitude, nearest, days, maxDistanceMiles);
+        var cacheKey = McpCacheKeys.WaterTemperature(latitude, longitude, nearest, days, maxDistanceMiles, includeChart);
         var cached = await _cache.GetAsync(cacheKey, invocationId, cancellationToken).ConfigureAwait(false);
         if (cached.Hit && !string.IsNullOrWhiteSpace(cached.Value))
         {
@@ -68,7 +69,15 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
                 "WaterTemp client cache hit. InvocationId={InvocationId} Key={Key}",
                 invocationId,
                 cacheKey);
-            return new WaterTempApiResult(200, cached.Value, true, null, null);
+            var cachedBody = cached.Value;
+            byte[]? cachedChart = null;
+            if (includeChart)
+            {
+                cachedChart = await TryLoadNearestChartAsync(cachedBody, days, invocationId, cancellationToken).ConfigureAwait(false);
+                cachedBody = MarkChart(cachedBody, cachedChart is { Length: > 0 });
+            }
+
+            return new WaterTempApiResult(200, cachedBody, true, null, null, cachedChart);
         }
 
         var baseUrl = _options.WaterTempApiBaseUrl.TrimEnd('/');
@@ -76,7 +85,8 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
             + $"&longitude={Uri.EscapeDataString(longitude.ToString(CultureInfo.InvariantCulture))}"
             + $"&nearest={nearest}"
             + $"&days={days}"
-            + $"&maxDistanceMiles={maxDistanceMiles}";
+            + $"&maxDistanceMiles={maxDistanceMiles}"
+            + (includeChart ? "&includeChart=true" : string.Empty);
         var url = $"{baseUrl}{Path}?{query}";
 
         string? accessToken = null;
@@ -120,7 +130,7 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
         }
 
         _logger.LogInformation(
-            "WaterTemp client request. InvocationId={InvocationId} Path={Path} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles} BearerAttached={BearerAttached}",
+            "WaterTemp client request. InvocationId={InvocationId} Path={Path} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles} IncludeChart={IncludeChart} BearerAttached={BearerAttached}",
             invocationId,
             Path,
             latitude,
@@ -128,6 +138,7 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
             nearest,
             days,
             maxDistanceMiles,
+            includeChart,
             accessToken is not null);
 
         try
@@ -157,10 +168,17 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
                     $"Water Temperature API returned {(int)response.StatusCode}.");
             }
 
-            var shaped = Shape(body, days, invocationId);
+            var shaped = Shape(body, days, includeChart, invocationId);
+            byte[]? chart = null;
+            if (includeChart)
+            {
+                chart = await TryLoadNearestChartAsync(shaped, days, invocationId, cancellationToken).ConfigureAwait(false);
+                shaped = MarkChart(shaped, chart is { Length: > 0 });
+            }
+
             await _cache.SetAsync(cacheKey, shaped, _options.WaterTempCacheTtl, invocationId, cancellationToken)
                 .ConfigureAwait(false);
-            return new WaterTempApiResult((int)response.StatusCode, shaped, true, null, null);
+            return new WaterTempApiResult((int)response.StatusCode, shaped, true, null, null, chart);
         }
         catch (TaskCanceledException ex)
         {
@@ -179,7 +197,7 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
         }
     }
 
-    private string Shape(string body, int days, string invocationId)
+    private string Shape(string body, int days, bool includeChart, string invocationId)
     {
         try
         {
@@ -213,6 +231,17 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
                     : null,
                 ["stations"] = stations
             };
+            if (includeChart)
+            {
+                shaped["chart"] = new JsonObject
+                {
+                    ["requested"] = true,
+                    ["available"] = false,
+                    ["scope"] = "nearest"
+                };
+            }
+
+            RewriteChartExplanation(shaped);
 
             _logger.LogInformation(
                 "WaterTemp client shaped response. InvocationId={InvocationId} Status={Status} StationCount={StationCount}",
@@ -228,6 +257,155 @@ public sealed class WaterTempApiClient : IWaterTempApiClient
             return body;
         }
     }
+
+
+    private async Task<byte[]?> TryLoadNearestChartAsync(string body, int days, string invocationId, CancellationToken cancellationToken)
+    {
+        if (!TryReadNearestStationId(body, out var stationId))
+        {
+            _logger.LogInformation(
+                "WaterTemp chart skipped. InvocationId={InvocationId} Reason=no_station Days={Days}",
+                invocationId,
+                days);
+            return null;
+        }
+
+        var baseUrl = _options.WaterTempApiBaseUrl.TrimEnd('/');
+        var url = $"{baseUrl}/api/v1/water-temperature/stations/{Uri.EscapeDataString(stationId)}/charts/{days}";
+        string? accessToken = null;
+        if (_options.WaterTempApiAudienceBound)
+        {
+            try
+            {
+                var audience = _options.WaterTempApiAudience.Trim().TrimEnd('/');
+                var scope = audience.EndsWith("/.default", StringComparison.OrdinalIgnoreCase)
+                    ? audience
+                    : audience + "/.default";
+                var token = await _credential.GetTokenAsync(new TokenRequestContext([scope]), cancellationToken).ConfigureAwait(false);
+                accessToken = token.Token;
+            }
+            catch (Exception ex) when (ex is AuthenticationFailedException or CredentialUnavailableException)
+            {
+                _logger.LogWarning(ex, "WaterTemp chart token failure. InvocationId={InvocationId} StationId={StationId}", invocationId, stationId);
+                return null;
+            }
+        }
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Accept.Clear();
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("image/png"));
+            if (!string.IsNullOrWhiteSpace(accessToken))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            }
+
+            using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation(
+                    "WaterTemp chart unavailable. InvocationId={InvocationId} StationId={StationId} Days={Days} StatusCode={StatusCode}",
+                    invocationId,
+                    stationId,
+                    days,
+                    (int)response.StatusCode);
+                return null;
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            if (bytes.Length is 0 or > 2_000_000 || !IsPng(bytes))
+            {
+                _logger.LogWarning(
+                    "WaterTemp chart rejected. InvocationId={InvocationId} StationId={StationId} Bytes={Bytes}",
+                    invocationId,
+                    stationId,
+                    bytes.Length);
+                return null;
+            }
+
+            _logger.LogInformation(
+                "WaterTemp chart loaded. InvocationId={InvocationId} StationId={StationId} Days={Days} Bytes={Bytes}",
+                invocationId,
+                stationId,
+                days,
+                bytes.Length);
+            return bytes;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            _logger.LogWarning(ex, "WaterTemp chart request failed. InvocationId={InvocationId} StationId={StationId} Days={Days}", invocationId, stationId, days);
+            return null;
+        }
+    }
+
+    private static string MarkChart(string body, bool available)
+    {
+        try
+        {
+            var node = JsonNode.Parse(body) as JsonObject;
+            if (node is null)
+            {
+                return body;
+            }
+
+            node["chart"] = new JsonObject
+            {
+                ["requested"] = true,
+                ["available"] = available,
+                ["scope"] = "nearest"
+            };
+            RewriteChartExplanation(node);
+            return node.ToJsonString();
+        }
+        catch (JsonException)
+        {
+            return body;
+        }
+    }
+
+    private static void RewriteChartExplanation(JsonObject shaped)
+    {
+        if (shaped["explanation"] is not JsonObject explanation)
+        {
+            return;
+        }
+
+        explanation["chart"] = "The chart image is the PNG for the nearest station and the same days window. It is returned only when includeChart is true. No chart image is returned unless that argument is true. An unavailable chart does not remove the temperature readings.";
+    }
+
+    private static bool TryReadNearestStationId(string body, out string stationId)
+    {
+        stationId = string.Empty;
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (!doc.RootElement.TryGetProperty("stations", out var stations) || stations.ValueKind != JsonValueKind.Array || stations.GetArrayLength() == 0)
+            {
+                return false;
+            }
+
+            var first = stations[0];
+            if (!first.TryGetProperty("stationId", out var id) || id.ValueKind != JsonValueKind.String)
+            {
+                return false;
+            }
+
+            stationId = id.GetString() ?? string.Empty;
+            return !string.IsNullOrWhiteSpace(stationId);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static bool IsPng(byte[] bytes) =>
+        bytes.Length >= 8
+        && bytes[0] == 0x89
+        && bytes[1] == 0x50
+        && bytes[2] == 0x4E
+        && bytes[3] == 0x47;
 
     private static JsonObject ShapeStation(JsonElement station, int days)
     {

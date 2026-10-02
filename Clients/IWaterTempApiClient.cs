@@ -5,7 +5,8 @@ public sealed record WaterTempApiResult(
     string? Body,
     bool IsSuccess,
     string? ErrorCode,
-    string? ErrorMessage);
+    string? ErrorMessage,
+    byte[]? ChartPng = null);
 
 public interface IWaterTempApiClient
 {
@@ -15,6 +16,7 @@ public interface IWaterTempApiClient
         int nearest,
         int days,
         int maxDistanceMiles,
+        bool includeChart,
         string invocationId,
         CancellationToken cancellationToken);
 }

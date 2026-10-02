@@ -18,7 +18,7 @@ public sealed class GetWaterTemperatureTool
 {
     public const string ToolName = "get_water_temperature";
     public const string ToolDescription =
-        "Observed hourly water temperature near a U.S. place or latitude and longitude. This is measurement history, not a forecast and not air temperature. Returns the nearest stations inside maxDistanceMiles that have a reading in the lookback window, with current temperature, coverage, and hourly history. Optional nearest 1, 3, or 5 (default 1). Optional days 1, 3, 7, 30, or 90 (default 1); days is lookback. Optional maxDistanceMiles 10, 25, or 50 (default 25). status no_station_within_range means none was inside the radius. Does not forecast water temperature and does not return air temperature, tides, or wind. Do not invent a temperature when the place cannot be resolved or the request fails.";
+        "Observed hourly water temperature near a U.S. place or latitude and longitude. This is measurement history, not a forecast and not air temperature. Returns the nearest stations inside maxDistanceMiles that have a reading in the lookback window, with current temperature, coverage, and hourly history. Optional nearest 1, 3, or 5 (default 1). Optional days 1, 3, 7, 30, or 90 (default 1); days is lookback. Optional maxDistanceMiles 10, 25, or 50 (default 25). Optional includeChart true asks for the PNG chart of the nearest station for the same days window. Default false. No chart image is returned unless includeChart is true. status no_station_within_range means none was inside the radius. Does not forecast water temperature and does not return air temperature, tides, or wind. Do not invent a temperature when the place cannot be resolved or the request fails.";
 
     private static readonly int[] AllowedNearest = [1, 3, 5];
     private static readonly int[] AllowedDays = [1, 3, 7, 30, 90];
@@ -50,13 +50,14 @@ public sealed class GetWaterTemperatureTool
         [McpToolProperty("nearest", "How many in-range stations to return. Allowed: 1, 3, 5. Default 1.", false)] int? nearest,
         [McpToolProperty("days", "History lookback in days for trend. Allowed: 1, 3, 7, 30, 90. Default 1. Not a forecast.", false)] int? days,
         [McpToolProperty("maxDistanceMiles", "Maximum station distance in miles. Allowed: 10, 25, 50. Default 25.", false)] int? maxDistanceMiles,
+        [McpToolProperty("includeChart", "Optional. True to include the nearest station PNG chart for the same days window. Default false. The model decides.", false)] bool? includeChart,
         FunctionContext functionContext)
     {
         var started = Stopwatch.StartNew();
         var invocationId = functionContext.InvocationId;
 
         _logger.LogInformation(
-            "GetWaterTemperature tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles}",
+            "GetWaterTemperature tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles} IncludeChart={IncludeChart}",
             invocationId,
             context.Name,
             context.SessionId,
@@ -65,7 +66,8 @@ public sealed class GetWaterTemperatureTool
             longitude,
             nearest,
             days,
-            maxDistanceMiles);
+            maxDistanceMiles,
+            includeChart);
 
         try
         {
@@ -131,12 +133,14 @@ public sealed class GetWaterTemperatureTool
                 return Error("missing_location", "Provide place, or latitude and longitude.", invocationId);
             }
 
+            var wantChart = includeChart == true;
             var result = await _client.GetAsync(
                 lat,
                 lon,
                 resolvedNearest,
                 resolvedDays,
                 resolvedMiles,
+                wantChart,
                 invocationId,
                 functionContext.CancellationToken).ConfigureAwait(false);
 
@@ -176,7 +180,7 @@ public sealed class GetWaterTemperatureTool
                 };
             }
 
-            return new
+            var textPayload = new
             {
                 ok = true,
                 invocationId,
@@ -184,6 +188,26 @@ public sealed class GetWaterTemperatureTool
                 statusCode = result.StatusCode,
                 location = locationPayload ?? new { latitude = lat, longitude = lon },
                 result = payload
+            };
+
+            if (result.ChartPng is not { Length: > 0 } png)
+            {
+                return textPayload;
+            }
+
+            _logger.LogInformation(
+                "GetWaterTemperature tool returning chart. InvocationId={InvocationId} Bytes={Bytes} ElapsedMs={ElapsedMs}",
+                invocationId,
+                png.Length,
+                started.ElapsedMilliseconds);
+
+            return new
+            {
+                content = new object[]
+                {
+                    new { type = "text", text = JsonSerializer.Serialize(textPayload) },
+                    new { type = "image", data = Convert.ToBase64String(png), mimeType = "image/png" }
+                }
             };
         }
         catch (Exception ex)
