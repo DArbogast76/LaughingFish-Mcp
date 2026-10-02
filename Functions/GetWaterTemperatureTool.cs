@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ModelContextProtocol.Protocol;
 using System.Text.Json;
 using LaughingFish.Mcp.Clients;
 using LaughingFish.Mcp.Configuration;
@@ -201,12 +202,13 @@ public sealed class GetWaterTemperatureTool
                 png.Length,
                 started.ElapsedMilliseconds);
 
-            return new
+            return new List<ContentBlock>
             {
-                content = new object[]
+                new TextContentBlock { Text = JsonSerializer.Serialize(textPayload) },
+                new ImageContentBlock
                 {
-                    new { type = "text", text = JsonSerializer.Serialize(textPayload) },
-                    new { type = "image", data = Convert.ToBase64String(png), mimeType = "image/png" }
+                    Data = Convert.ToBase64String(png),
+                    MimeType = "image/png"
                 }
             };
         }
