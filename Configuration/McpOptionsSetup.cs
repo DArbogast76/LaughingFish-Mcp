@@ -39,6 +39,8 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.LunarCycleApiAudience = ReadString("LunarCycleApiAudience", options.LunarCycleApiAudience);
         options.TideApiBaseUrl = ReadString("TideApiBaseUrl", options.TideApiBaseUrl);
         options.TideApiAudience = ReadString("TideApiAudience", options.TideApiAudience);
+        options.SeaConditionsApiBaseUrl = ReadString("SeaConditionsApiBaseUrl", options.SeaConditionsApiBaseUrl);
+        options.SeaConditionsApiAudience = ReadString("SeaConditionsApiAudience", options.SeaConditionsApiAudience);
 
         options.WeatherApiTimeoutSeconds = ReadInt("WeatherApiTimeoutSeconds", options.WeatherApiTimeoutSeconds);
         options.PinRecentHours = ReadInt("PinRecentHours", options.PinRecentHours);
@@ -50,16 +52,20 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.SpeciesGuideCacheTtlSeconds = ReadInt("SpeciesGuideCacheTtlSeconds", options.SpeciesGuideCacheTtlSeconds);
         options.LunarCycleCacheTtlSeconds = ReadInt("LunarCycleCacheTtlSeconds", options.LunarCycleCacheTtlSeconds);
         options.TideCacheTtlSeconds = ReadInt("TideCacheTtlSeconds", options.TideCacheTtlSeconds);
+        options.SeaConditionsCacheTtlSeconds = ReadInt("SeaConditionsCacheTtlSeconds", options.SeaConditionsCacheTtlSeconds);
 
         _logger.LogInformation(
-            "MCP options bound. WaterTempApiBound={WaterTempApiBound} WeatherApiBound={WeatherApiBound} SunriseSunsetApiBound={SunriseSunsetApiBound} SpeciesGuideApiBound={SpeciesGuideApiBound} LunarCycleApiBound={LunarCycleApiBound} TideApiBound={TideApiBound} TideApiAudienceBound={TideApiAudienceBound}",
+            "MCP options bound. WaterTempApiBound={WaterTempApiBound} WeatherApiBound={WeatherApiBound} SunriseSunsetApiBound={SunriseSunsetApiBound} SpeciesGuideApiBound={SpeciesGuideApiBound} LunarCycleApiBound={LunarCycleApiBound} TideApiBound={TideApiBound} TideApiAudienceBound={TideApiAudienceBound} SeaConditionsApiBound={SeaConditionsApiBound} SeaConditionsApiAudienceBound={SeaConditionsApiAudienceBound} SeaConditionsCacheTtlSeconds={SeaConditionsCacheTtlSeconds}",
             options.WaterTempApiBound,
             options.WeatherApiBound,
             options.SunriseSunsetApiBound,
             options.SpeciesGuideApiBound,
             options.LunarCycleApiBound,
             options.TideApiBound,
-            options.TideApiAudienceBound);
+            options.TideApiAudienceBound,
+            options.SeaConditionsApiBound,
+            options.SeaConditionsApiAudienceBound,
+            options.SeaConditionsCacheTtlSeconds);
     }
 
     private string ReadString(string key, string fallback)

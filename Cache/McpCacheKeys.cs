@@ -40,11 +40,23 @@ public static class McpCacheKeys
             nearest.ToString(CultureInfo.InvariantCulture),
             maxDistanceMiles.ToString(CultureInfo.InvariantCulture));
 
-    public static string WaterTemperature(double latitude, double longitude, int nearest, int days, int maxDistanceMiles, bool includeChart) =>
+    public static string SeaConditions(
+        double latitude,
+        double longitude,
+        int nearest,
+        int days,
+        int maxDistanceMiles) =>
+        Format(
+            "sea",
+            Coord(latitude),
+            Coord(longitude),
+            nearest.ToString(CultureInfo.InvariantCulture),
+            days.ToString(CultureInfo.InvariantCulture),
+            maxDistanceMiles.ToString(CultureInfo.InvariantCulture));
+
+    public static string WaterTemperature(double latitude, double longitude, int nearest, int days, int maxDistanceMiles) =>
         Format(
             "wt",
-            "expl1",
-            includeChart ? "chart" : "nochart",
             Coord(latitude),
             Coord(longitude),
             nearest.ToString(CultureInfo.InvariantCulture),

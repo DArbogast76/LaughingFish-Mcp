@@ -101,7 +101,8 @@ public sealed class Health
                 searchSpeciesGuides = "/api/v1/tools/search-species-guides",
                 getChapter = "/api/v1/tools/get-chapter",
                 getLunarCycle = "/api/v1/tools/get-lunar-cycle",
-                getTidePredictions = "/api/v1/tools/get-tide-predictions"
+                getTidePredictions = "/api/v1/tools/get-tide-predictions",
+                getSeaConditions = "/api/v1/tools/get-sea-conditions"
             },
             settings = new
             {
@@ -123,6 +124,8 @@ public sealed class Health
                 lunarCycleApiAudienceBound = _options.LunarCycleApiAudienceBound,
                 tideApiBound = _options.TideApiBound,
                 tideApiAudienceBound = _options.TideApiAudienceBound,
+                seaConditionsApiBound = _options.SeaConditionsApiBound,
+                seaConditionsApiAudienceBound = _options.SeaConditionsApiAudienceBound,
                 pinRecentHours = _options.PinRecentHours,
                 weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
                 waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
@@ -131,6 +134,7 @@ public sealed class Health
                 speciesGuideCacheTtlSeconds = (int)_options.SpeciesGuideCacheTtl.TotalSeconds,
                 lunarCycleCacheTtlSeconds = (int)_options.LunarCycleCacheTtl.TotalSeconds,
                 tideCacheTtlSeconds = (int)_options.TideCacheTtl.TotalSeconds,
+                seaConditionsCacheTtlSeconds = (int)_options.SeaConditionsCacheTtl.TotalSeconds,
                 cacheDefaultTtlSeconds = (int)_options.DefaultCacheTtl.TotalSeconds
             }
         };

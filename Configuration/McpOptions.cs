@@ -24,6 +24,8 @@ public sealed class McpOptions
     public string LunarCycleApiAudience { get; set; } = string.Empty;
     public string TideApiBaseUrl { get; set; } = string.Empty;
     public string TideApiAudience { get; set; } = string.Empty;
+    public string SeaConditionsApiBaseUrl { get; set; } = string.Empty;
+    public string SeaConditionsApiAudience { get; set; } = string.Empty;
     public int PinRecentHours { get; set; } = 48;
     public int CacheDefaultTtlSeconds { get; set; } = 3600;
     public int WeatherCacheTtlSeconds { get; set; } = 3600;
@@ -33,6 +35,7 @@ public sealed class McpOptions
     public int SpeciesGuideCacheTtlSeconds { get; set; } = 604800;
     public int LunarCycleCacheTtlSeconds { get; set; } = 604800;
     public int TideCacheTtlSeconds { get; set; } = 604800;
+    public int SeaConditionsCacheTtlSeconds { get; set; } = 3600;
 
     public bool RedisHostBound => !string.IsNullOrWhiteSpace(RedisHost);
     public bool RedisUserBound => !string.IsNullOrWhiteSpace(RedisUser);
@@ -51,6 +54,8 @@ public sealed class McpOptions
     public bool LunarCycleApiAudienceBound => !string.IsNullOrWhiteSpace(LunarCycleApiAudience);
     public bool TideApiBound => !string.IsNullOrWhiteSpace(TideApiBaseUrl);
     public bool TideApiAudienceBound => !string.IsNullOrWhiteSpace(TideApiAudience);
+    public bool SeaConditionsApiBound => !string.IsNullOrWhiteSpace(SeaConditionsApiBaseUrl);
+    public bool SeaConditionsApiAudienceBound => !string.IsNullOrWhiteSpace(SeaConditionsApiAudience);
 
     public TimeSpan WeatherCacheTtl => Ttl(WeatherCacheTtlSeconds, 3600);
     public TimeSpan WaterTempCacheTtl => Ttl(WaterTempCacheTtlSeconds, 3600);
@@ -59,6 +64,7 @@ public sealed class McpOptions
     public TimeSpan SpeciesGuideCacheTtl => Ttl(SpeciesGuideCacheTtlSeconds, 604800);
     public TimeSpan LunarCycleCacheTtl => Ttl(LunarCycleCacheTtlSeconds, 604800);
     public TimeSpan TideCacheTtl => Ttl(TideCacheTtlSeconds, 604800);
+    public TimeSpan SeaConditionsCacheTtl => Ttl(SeaConditionsCacheTtlSeconds, 3600);
     public TimeSpan DefaultCacheTtl => Ttl(CacheDefaultTtlSeconds, 3600);
 
     private static TimeSpan Ttl(int seconds, int fallback) =>
