@@ -70,6 +70,8 @@ public static class McpCacheKeys
     public static string Maps(string place) =>
         $"{Prefix}:maps:{MapsVersion}:{NormalizePlace(place)}";
 
+    public static string Uv(string zip) => Format("uv", zip);
+
     public static string SpeciesGuideCatalog() => Format("sg", "species");
 
     public static string SpeciesGuideTopics() => Format("sg", "topics");

@@ -41,6 +41,8 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.TideApiAudience = ReadString("TideApiAudience", options.TideApiAudience);
         options.SeaConditionsApiBaseUrl = ReadString("SeaConditionsApiBaseUrl", options.SeaConditionsApiBaseUrl);
         options.SeaConditionsApiAudience = ReadString("SeaConditionsApiAudience", options.SeaConditionsApiAudience);
+        options.UvApiBaseUrl = ReadString("UvApiBaseUrl", options.UvApiBaseUrl);
+        options.UvApiAudience = ReadString("UvApiAudience", options.UvApiAudience);
 
         options.WeatherApiTimeoutSeconds = ReadInt("WeatherApiTimeoutSeconds", options.WeatherApiTimeoutSeconds);
         options.PinRecentHours = ReadInt("PinRecentHours", options.PinRecentHours);
@@ -53,9 +55,10 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.LunarCycleCacheTtlSeconds = ReadInt("LunarCycleCacheTtlSeconds", options.LunarCycleCacheTtlSeconds);
         options.TideCacheTtlSeconds = ReadInt("TideCacheTtlSeconds", options.TideCacheTtlSeconds);
         options.SeaConditionsCacheTtlSeconds = ReadInt("SeaConditionsCacheTtlSeconds", options.SeaConditionsCacheTtlSeconds);
+        options.UvCacheTtlSeconds = ReadInt("UvCacheTtlSeconds", options.UvCacheTtlSeconds);
 
         _logger.LogInformation(
-            "MCP options bound. WaterTempApiBound={WaterTempApiBound} WeatherApiBound={WeatherApiBound} SunriseSunsetApiBound={SunriseSunsetApiBound} SpeciesGuideApiBound={SpeciesGuideApiBound} LunarCycleApiBound={LunarCycleApiBound} TideApiBound={TideApiBound} TideApiAudienceBound={TideApiAudienceBound} SeaConditionsApiBound={SeaConditionsApiBound} SeaConditionsApiAudienceBound={SeaConditionsApiAudienceBound} SeaConditionsCacheTtlSeconds={SeaConditionsCacheTtlSeconds}",
+            "MCP options bound. WaterTempApiBound={WaterTempApiBound} WeatherApiBound={WeatherApiBound} SunriseSunsetApiBound={SunriseSunsetApiBound} SpeciesGuideApiBound={SpeciesGuideApiBound} LunarCycleApiBound={LunarCycleApiBound} TideApiBound={TideApiBound} TideApiAudienceBound={TideApiAudienceBound} SeaConditionsApiBound={SeaConditionsApiBound} SeaConditionsApiAudienceBound={SeaConditionsApiAudienceBound} SeaConditionsCacheTtlSeconds={SeaConditionsCacheTtlSeconds} UvApiBound={UvApiBound} UvApiAudienceBound={UvApiAudienceBound} UvCacheTtlSeconds={UvCacheTtlSeconds}",
             options.WaterTempApiBound,
             options.WeatherApiBound,
             options.SunriseSunsetApiBound,
@@ -65,7 +68,10 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
             options.TideApiAudienceBound,
             options.SeaConditionsApiBound,
             options.SeaConditionsApiAudienceBound,
-            options.SeaConditionsCacheTtlSeconds);
+            options.SeaConditionsCacheTtlSeconds,
+            options.UvApiBound,
+            options.UvApiAudienceBound,
+            options.UvCacheTtlSeconds);
     }
 
     private string ReadString(string key, string fallback)
