@@ -13,6 +13,7 @@ namespace LaughingFish.Mcp.Location;
 public sealed class AzureMapsLocationResolver : ILocationResolver
 {
     public const string GeocodePath = "/geocode";
+    public const string ReverseGeocodePath = "/reverseGeocode";
     public const string ApiVersion = "2023-06-01";
     public const string TokenScope = "https://atlas.microsoft.com/.default";
     public const string AtlasHost = "https://atlas.microsoft.com";
@@ -75,36 +76,51 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
             if (fromCache is not null)
             {
                 _logger.LogInformation(
-                    "Location resolver cache hit. InvocationId={InvocationId} Key={Key} Lat={Lat} Lon={Lon}",
+                    "Location resolver cache hit. InvocationId={InvocationId} Key={Key} Lat={Lat} Lon={Lon} PostalCode={PostalCode}",
+                    invocationId,
+                    cacheKey,
+                    fromCache.Latitude,
+                    fromCache.Longitude,
+                    fromCache.PostalCode);
+                if (!string.IsNullOrWhiteSpace(fromCache.PostalCode) || !NeedsUsZip(fromCache))
+                {
+                    return fromCache;
+                }
+
+                _logger.LogInformation(
+                    "Location resolver cache missing ZIP. InvocationId={InvocationId} Key={Key} Lat={Lat} Lon={Lon}",
                     invocationId,
                     cacheKey,
                     fromCache.Latitude,
                     fromCache.Longitude);
-                return fromCache;
+                try
+                {
+                    var cachedToken = await AcquireTokenAsync(invocationId, cancellationToken).ConfigureAwait(false);
+                    var completed = await FillUsZipAsync(fromCache, cachedToken, invocationId, cancellationToken).ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(completed.PostalCode))
+                    {
+                        await _cache.SetAsync(
+                            cacheKey,
+                            JsonSerializer.Serialize(completed),
+                            _options.MapsCacheTtl,
+                            invocationId,
+                            cancellationToken).ConfigureAwait(false);
+                    }
+
+                    return completed;
+                }
+                catch (LocationResolutionException ex)
+                {
+                    _logger.LogWarning(
+                        "Location resolver kept cached place without ZIP. InvocationId={InvocationId} Error={Error}",
+                        invocationId,
+                        ex.ErrorCode);
+                    return fromCache;
+                }
             }
         }
 
-        AccessToken token;
-        var tokenStarted = Stopwatch.StartNew();
-        try
-        {
-            token = await _credential.GetTokenAsync(MapsTokenContext, cancellationToken).ConfigureAwait(false);
-            _logger.LogInformation(
-                "Location resolver token acquired. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
-                invocationId,
-                tokenStarted.ElapsedMilliseconds);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(
-                ex,
-                "Location resolver token failure. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
-                invocationId,
-                tokenStarted.ElapsedMilliseconds);
-            throw new LocationResolutionException(
-                "maps_token_failed",
-                "Could not acquire an Azure Maps token. In Azure the Function managed identity needs Azure Maps Data Reader.");
-        }
+        var token = await AcquireTokenAsync(invocationId, cancellationToken).ConfigureAwait(false);
 
         var url = $"{AtlasHost}{GeocodePath}?api-version={ApiVersion}&query={Uri.EscapeDataString(trimmed)}";
 
@@ -156,6 +172,7 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
                     $"No coordinates were found for '{trimmed}'.");
             }
 
+            location = await FillUsZipAsync(location, token, invocationId, cancellationToken).ConfigureAwait(false);
             _logger.LogInformation(
                 "Location resolver succeeded. InvocationId={InvocationId} Lat={Lat} Lon={Lon} Address={Address} PostalCode={PostalCode}",
                 invocationId,
@@ -173,6 +190,174 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
 
             return location;
         }
+    }
+
+
+    private async Task<string> AcquireTokenAsync(string invocationId, CancellationToken cancellationToken)
+    {
+        var tokenStarted = Stopwatch.StartNew();
+        try
+        {
+            var token = await _credential.GetTokenAsync(MapsTokenContext, cancellationToken).ConfigureAwait(false);
+            _logger.LogInformation(
+                "Location resolver token acquired. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
+                invocationId,
+                tokenStarted.ElapsedMilliseconds);
+            return token.Token;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Location resolver token failure. InvocationId={InvocationId} ElapsedMs={ElapsedMs}",
+                invocationId,
+                tokenStarted.ElapsedMilliseconds);
+            throw new LocationResolutionException(
+                "maps_token_failed",
+                "Could not acquire an Azure Maps token. In Azure the Function managed identity needs Azure Maps Data Reader.");
+        }
+    }
+
+    private async Task<ResolvedLocation> FillUsZipAsync(
+        ResolvedLocation location,
+        string token,
+        string invocationId,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(location.PostalCode) || !NeedsUsZip(location))
+        {
+            return location;
+        }
+
+        var coordinates = string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"{location.Longitude},{location.Latitude}");
+        var url = $"{AtlasHost}{ReverseGeocodePath}?api-version={ApiVersion}&coordinates={Uri.EscapeDataString(coordinates)}&resultTypes=Address,Postcode1";
+        _logger.LogInformation(
+            "Location resolver reverse geocode. InvocationId={InvocationId} Lat={Lat} Lon={Lon}",
+            invocationId,
+            location.Latitude,
+            location.Longitude);
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.TryAddWithoutValidation("x-ms-client-id", _options.AzureMapsClientId);
+            using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            _logger.LogInformation(
+                "Location resolver reverse response. InvocationId={InvocationId} StatusCode={StatusCode} BodyLength={BodyLength}",
+                invocationId,
+                (int)response.StatusCode,
+                body.Length);
+            if (!response.IsSuccessStatusCode)
+            {
+                return location;
+            }
+
+            var zip = ReadPostalFromBody(body);
+            if (string.IsNullOrWhiteSpace(zip))
+            {
+                _logger.LogInformation(
+                    "Location resolver reverse geocode has no ZIP. InvocationId={InvocationId} Lat={Lat} Lon={Lon}",
+                    invocationId,
+                    location.Latitude,
+                    location.Longitude);
+                return location;
+            }
+
+            _logger.LogInformation(
+                "Location resolver reverse geocode filled ZIP. InvocationId={InvocationId} Lat={Lat} Lon={Lon} PostalCode={PostalCode}",
+                invocationId,
+                location.Latitude,
+                location.Longitude,
+                zip);
+            return location with { PostalCode = zip };
+        }
+        catch (Exception ex) when (ex is TaskCanceledException or HttpRequestException)
+        {
+            _logger.LogWarning(
+                ex,
+                "Location resolver reverse geocode failed. InvocationId={InvocationId} Lat={Lat} Lon={Lon}",
+                invocationId,
+                location.Latitude,
+                location.Longitude);
+            return location;
+        }
+    }
+
+    private static bool NeedsUsZip(ResolvedLocation location)
+    {
+        if (!string.IsNullOrWhiteSpace(location.PostalCode))
+        {
+            return false;
+        }
+
+        var country = location.CountryRegion?.Trim();
+        if (!string.IsNullOrWhiteSpace(country))
+        {
+            return country.Equals("US", StringComparison.OrdinalIgnoreCase)
+                || country.Equals("USA", StringComparison.OrdinalIgnoreCase)
+                || country.Equals("United States", StringComparison.OrdinalIgnoreCase)
+                || country.Equals("United States of America", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return IsUsPoint(location.Latitude, location.Longitude);
+    }
+
+    private static bool IsUsPoint(double latitude, double longitude)
+    {
+        if (latitude is >= 24.5 and <= 49.5 && longitude is >= -125 and <= -66.5)
+        {
+            return true;
+        }
+
+        if (latitude is >= 51 and <= 72 && longitude is >= -170 and <= -129)
+        {
+            return true;
+        }
+
+        if (latitude is >= 18.5 and <= 22.5 && longitude is >= -161 and <= -154)
+        {
+            return true;
+        }
+
+        return latitude is >= 17.5 and <= 18.6 && longitude is >= -67.5 and <= -64.5;
+    }
+
+    private static string? ReadPostalFromBody(string body)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
+            if (!document.RootElement.TryGetProperty("features", out var features) || features.ValueKind != JsonValueKind.Array)
+            {
+                return null;
+            }
+
+            foreach (var feature in features.EnumerateArray())
+            {
+                if (!feature.TryGetProperty("properties", out var properties)
+                    || !properties.TryGetProperty("address", out var address)
+                    || address.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                var zip = ReadUsZip(address);
+                if (!string.IsNullOrWhiteSpace(zip))
+                {
+                    return zip;
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        return null;
     }
 
     private static bool TryReadFeature(string body, string query, out ResolvedLocation? location)
