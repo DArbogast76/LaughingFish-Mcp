@@ -65,8 +65,10 @@ public static class McpCacheKeys
             days.ToString(CultureInfo.InvariantCulture),
             maxDistanceMiles.ToString(CultureInfo.InvariantCulture));
 
+    public const string MapsVersion = "v2";
+
     public static string Maps(string place) =>
-        Format("maps", NormalizePlace(place));
+        $"{Prefix}:maps:{MapsVersion}:{NormalizePlace(place)}";
 
     public static string SpeciesGuideCatalog() => Format("sg", "species");
 

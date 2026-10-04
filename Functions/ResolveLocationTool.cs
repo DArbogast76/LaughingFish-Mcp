@@ -15,7 +15,7 @@ public sealed class ResolveLocationTool
 {
     public const string ToolName = "resolve_location";
     public const string ToolDescription =
-        "Converts a place name, city, or address into latitude and longitude using Azure Maps. Use when coordinates are needed by themselves. Does not invent coordinates when Maps fails.";
+        "Converts a place name, city, or address into latitude, longitude, and the US postal code when Azure Maps returns one. Use when coordinates are needed by themselves. Does not invent coordinates or a postal code when Maps fails.";
 
     private readonly ILogger<ResolveLocationTool> _logger;
     private readonly ILocationResolver _resolver;
@@ -47,17 +47,18 @@ public sealed class ResolveLocationTool
                 .ConfigureAwait(false);
 
             _logger.LogInformation(
-                "ResolveLocation tool succeeded. InvocationId={InvocationId} Lat={Lat} Lon={Lon} ElapsedMs={ElapsedMs}",
+                "ResolveLocation tool succeeded. InvocationId={InvocationId} Lat={Lat} Lon={Lon} PostalCode={PostalCode} ElapsedMs={ElapsedMs}",
                 invocationId,
                 location.Latitude,
                 location.Longitude,
+                location.PostalCode,
                 started.ElapsedMilliseconds);
 
             return new
             {
                 ok = true,
                 invocationId,
-                location = ToPayload(location)
+                location = ToResolvePayload(location)
             };
         }
         catch (LocationResolutionException ex)
@@ -95,5 +96,17 @@ public sealed class ResolveLocationTool
         locality = location.Locality,
         adminDistrict = location.AdminDistrict,
         countryRegion = location.CountryRegion
+    };
+
+    private static object ToResolvePayload(ResolvedLocation location) => new
+    {
+        latitude = location.Latitude,
+        longitude = location.Longitude,
+        query = location.Query,
+        formattedAddress = location.FormattedAddress,
+        locality = location.Locality,
+        adminDistrict = location.AdminDistrict,
+        countryRegion = location.CountryRegion,
+        postalCode = location.PostalCode
     };
 }

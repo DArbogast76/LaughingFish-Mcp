@@ -157,11 +157,12 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
             }
 
             _logger.LogInformation(
-                "Location resolver succeeded. InvocationId={InvocationId} Lat={Lat} Lon={Lon} Address={Address}",
+                "Location resolver succeeded. InvocationId={InvocationId} Lat={Lat} Lon={Lon} Address={Address} PostalCode={PostalCode}",
                 invocationId,
                 location.Latitude,
                 location.Longitude,
-                location.FormattedAddress);
+                location.FormattedAddress,
+                location.PostalCode);
 
             await _cache.SetAsync(
                 cacheKey,
@@ -201,6 +202,7 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
                 string? locality = null;
                 string? admin = null;
                 string? country = null;
+                string? postalCode = null;
 
                 if (feature.TryGetProperty("properties", out var properties))
                 {
@@ -212,10 +214,11 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
                         locality = ReadString(address, "locality") ?? ReadString(address, "municipality");
                         admin = ReadString(address, "adminDistrict") ?? ReadString(address, "countrySubdivision");
                         country = ReadString(address, "countryRegion") ?? ReadString(address, "countryCode");
+                        postalCode = ReadUsZip(address);
                     }
                 }
 
-                location = new ResolvedLocation(lat, lon, query, formatted, locality, admin, country);
+                location = new ResolvedLocation(lat, lon, query, formatted, locality, admin, country, postalCode);
                 return true;
             }
 
@@ -225,6 +228,57 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
         {
             return false;
         }
+    }
+
+    private static string? ReadUsZip(JsonElement address)
+    {
+        var raw = ReadString(address, "postalCode") ?? ReadString(address, "extendedPostalCode");
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        var countryIso = ReadCountryIso(address);
+        if (countryIso is not null
+            && !countryIso.Equals("US", StringComparison.OrdinalIgnoreCase)
+            && !countryIso.Equals("USA", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var trimmed = raw.Trim();
+        if (trimmed.Length < 5 || !trimmed.Take(5).All(char.IsDigit))
+        {
+            return null;
+        }
+
+        if (trimmed.Length == 5 || (trimmed.Length > 5 && trimmed[5] == '-'))
+        {
+            return trimmed[..5];
+        }
+
+        return null;
+    }
+
+    private static string? ReadCountryIso(JsonElement address)
+    {
+        if (!address.TryGetProperty("countryRegion", out var country))
+        {
+            return ReadString(address, "countryCode");
+        }
+
+        if (country.ValueKind == JsonValueKind.String)
+        {
+            var value = country.GetString()?.Trim();
+            return string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+
+        if (country.ValueKind == JsonValueKind.Object)
+        {
+            return ReadString(country, "ISO") ?? ReadString(country, "iso");
+        }
+
+        return null;
     }
 
     private static string? ReadString(JsonElement element, string name)
