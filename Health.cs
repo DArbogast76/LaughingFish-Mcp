@@ -128,6 +128,8 @@ public sealed class Health
                 seaConditionsApiAudienceBound = _options.SeaConditionsApiAudienceBound,
                 uvApiBound = _options.UvApiBound,
                 uvApiAudienceBound = _options.UvApiAudienceBound,
+                weatherAlertsApiBound = _options.WeatherAlertsApiBound,
+                weatherAlertsApiAudienceBound = _options.WeatherAlertsApiAudienceBound,
                 pinRecentHours = _options.PinRecentHours,
                 weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
                 waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
@@ -138,6 +140,7 @@ public sealed class Health
                 tideCacheTtlSeconds = (int)_options.TideCacheTtl.TotalSeconds,
                 seaConditionsCacheTtlSeconds = (int)_options.SeaConditionsCacheTtl.TotalSeconds,
                 uvCacheTtlSeconds = (int)_options.UvCacheTtl.TotalSeconds,
+                weatherAlertsCacheTtlSeconds = (int)_options.WeatherAlertsCacheTtl.TotalSeconds,
                 cacheDefaultTtlSeconds = (int)_options.DefaultCacheTtl.TotalSeconds
             }
         };

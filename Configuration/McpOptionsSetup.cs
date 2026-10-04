@@ -43,6 +43,8 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.SeaConditionsApiAudience = ReadString("SeaConditionsApiAudience", options.SeaConditionsApiAudience);
         options.UvApiBaseUrl = ReadString("UvApiBaseUrl", options.UvApiBaseUrl);
         options.UvApiAudience = ReadString("UvApiAudience", options.UvApiAudience);
+        options.WeatherAlertsApiBaseUrl = ReadString("WeatherAlertsApiBaseUrl", options.WeatherAlertsApiBaseUrl);
+        options.WeatherAlertsApiAudience = ReadString("WeatherAlertsApiAudience", options.WeatherAlertsApiAudience);
 
         options.WeatherApiTimeoutSeconds = ReadInt("WeatherApiTimeoutSeconds", options.WeatherApiTimeoutSeconds);
         options.PinRecentHours = ReadInt("PinRecentHours", options.PinRecentHours);
@@ -56,6 +58,7 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.TideCacheTtlSeconds = ReadInt("TideCacheTtlSeconds", options.TideCacheTtlSeconds);
         options.SeaConditionsCacheTtlSeconds = ReadInt("SeaConditionsCacheTtlSeconds", options.SeaConditionsCacheTtlSeconds);
         options.UvCacheTtlSeconds = ReadInt("UvCacheTtlSeconds", options.UvCacheTtlSeconds);
+        options.WeatherAlertsCacheTtlSeconds = ReadInt("WeatherAlertsCacheTtlSeconds", options.WeatherAlertsCacheTtlSeconds);
 
         _logger.LogInformation(
             "MCP options bound. WaterTempApiBound={WaterTempApiBound} WeatherApiBound={WeatherApiBound} SunriseSunsetApiBound={SunriseSunsetApiBound} SpeciesGuideApiBound={SpeciesGuideApiBound} LunarCycleApiBound={LunarCycleApiBound} TideApiBound={TideApiBound} TideApiAudienceBound={TideApiAudienceBound} SeaConditionsApiBound={SeaConditionsApiBound} SeaConditionsApiAudienceBound={SeaConditionsApiAudienceBound} SeaConditionsCacheTtlSeconds={SeaConditionsCacheTtlSeconds} UvApiBound={UvApiBound} UvApiAudienceBound={UvApiAudienceBound} UvCacheTtlSeconds={UvCacheTtlSeconds}",
