@@ -125,7 +125,7 @@ public sealed class AzureMapsLocationResolver : ILocationResolver
         var url = $"{AtlasHost}{GeocodePath}?api-version={ApiVersion}&query={Uri.EscapeDataString(trimmed)}";
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.TryAddWithoutValidation("x-ms-client-id", _options.AzureMapsClientId);
 
         _logger.LogInformation(
