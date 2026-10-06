@@ -34,23 +34,20 @@ public sealed class SunriseSunsetHttp
         try
         {
             var values = await ToolHttpRequest.ReadAsync(req, context.CancellationToken).ConfigureAwait(false);
-            var place = ToolHttpRequest.ReadString(values, "place");
             var date = ToolHttpRequest.ReadString(values, "date");
             var timeZone = ToolHttpRequest.ReadString(values, "timeZone");
             var latitude = ReadDouble(values, "latitude") ?? ReadDouble(values, "lat");
             var longitude = ReadDouble(values, "longitude") ?? ReadDouble(values, "lon");
             _logger.LogInformation(
-                "GetSunriseSunset HTTP started. InvocationId={InvocationId} Method={Method} Place={Place} Lat={Lat} Lon={Lon} Date={Date} TimeZone={TimeZone}",
+                "GetSunriseSunset HTTP started. InvocationId={InvocationId} Method={Method} Lat={Lat} Lon={Lon} Date={Date} TimeZone={TimeZone}",
                 invocationId,
                 req.Method,
-                place,
                 latitude,
                 longitude,
                 date,
                 timeZone);
 
             var result = await _tool.ExecuteAsync(
-                place,
                 latitude,
                 longitude,
                 date,

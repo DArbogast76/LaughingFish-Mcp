@@ -17,28 +17,25 @@ public sealed class GetLunarCycleTool
 {
     public const string ToolName = "get_lunar_cycle";
     public const string ToolDescription =
-        "Moon phase, illumination, moonrise, transit, and moonset for a place and date. Pass place or latitude and longitude. Pass date, or startDate and endDate (yyyy-MM-dd, inclusive, at most 31 days). Convert relative dates before calling. Do not pass a time zone. Does not return tides or a solunar score. Do not invent moon times.";
+        "Moon phase, illumination, moonrise, transit, and moonset for a date. Latitude and longitude are required. Pass date, or startDate and endDate (yyyy-MM-dd, inclusive, at most 31 days). Convert relative dates before calling. Do not pass a time zone. Does not return tides or a solunar score. Do not invent moon times.";
 
     private readonly ILogger<GetLunarCycleTool> _logger;
     private readonly ILunarCycleApiClient _client;
-    private readonly ILocationResolver _locations;
 
     public GetLunarCycleTool(
         ILogger<GetLunarCycleTool> logger,
-        ILunarCycleApiClient client,
-        ILocationResolver locations)
+        ILunarCycleApiClient client
+    )
     {
         _logger = logger;
         _client = client;
-        _locations = locations;
     }
 
     [Function(nameof(GetLunarCycleTool))]
     public async Task<object> Run(
         [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
-        [McpToolProperty("place", "Place name, city, or address. Preferred over raw coordinates.", false)] string? place,
-        [McpToolProperty("latitude", "Latitude in decimal degrees when place is not provided.", false)] double? latitude,
-        [McpToolProperty("longitude", "Longitude in decimal degrees when place is not provided.", false)] double? longitude,
+        [McpToolProperty("latitude", "Latitude in decimal degrees, from -90 to 90.", true)] double? latitude,
+        [McpToolProperty("longitude", "Longitude in decimal degrees, from -180 to 180.", true)] double? longitude,
         [McpToolProperty("date", "Single calendar date yyyy-MM-dd. Defaults to today's UTC date when startDate is omitted.", false)] string? date,
         [McpToolProperty("startDate", "Range start yyyy-MM-dd. Use with endDate for a trip. At most 31 days.", false)] string? startDate,
         [McpToolProperty("endDate", "Range end yyyy-MM-dd, inclusive.", false)] string? endDate,
@@ -47,11 +44,10 @@ public sealed class GetLunarCycleTool
         var started = Stopwatch.StartNew();
         var invocationId = functionContext.InvocationId;
         _logger.LogInformation(
-            "GetLunarCycle tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Date={Date} StartDate={StartDate} EndDate={EndDate}",
+            "GetLunarCycle tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Lat={Lat} Lon={Lon} Date={Date} StartDate={StartDate} EndDate={EndDate}",
             invocationId,
             context.Name,
             context.SessionId,
-            place,
             latitude,
             longitude,
             date,
@@ -61,7 +57,6 @@ public sealed class GetLunarCycleTool
         try
         {
             var result = await ExecuteAsync(
-                place,
                 latitude,
                 longitude,
                 date,
@@ -88,7 +83,6 @@ public sealed class GetLunarCycleTool
     }
 
     internal async Task<JsonObject> ExecuteAsync(
-        string? place,
         double? latitude,
         double? longitude,
         string? date,
@@ -102,52 +96,16 @@ public sealed class GetLunarCycleTool
             return Error(errorCode, errorMessage, invocationId);
         }
 
-        double lat;
-        double lon;
-        JsonNode? locationPayload = null;
+        if (!CoordinateInput.TryRead(latitude, longitude, out var lat, out var lon, out var locationError, out var locationMessage))
+        {
+            return Error(locationError, locationMessage, invocationId);
+        }
 
-        if (!string.IsNullOrWhiteSpace(place))
+        JsonNode locationPayload = new JsonObject
         {
-            try
-            {
-                var resolved = await _locations.ResolveAsync(place, invocationId, cancellationToken).ConfigureAwait(false);
-                lat = resolved.Latitude;
-                lon = resolved.Longitude;
-                locationPayload = JsonSerializer.SerializeToNode(ResolveLocationTool.ToPayload(resolved));
-            }
-            catch (LocationResolutionException ex)
-            {
-                _logger.LogInformation(
-                    "GetLunarCycle location failed. InvocationId={InvocationId} Error={Error}",
-                    invocationId,
-                    ex.ErrorCode);
-                return Error(ex.ErrorCode, ex.Message, invocationId);
-            }
-        }
-        else if (latitude is { } parsedLat && longitude is { } parsedLon
-                 && parsedLat is >= -90 and <= 90
-                 && parsedLon is >= -180 and <= 180
-                 && !double.IsNaN(parsedLat)
-                 && !double.IsNaN(parsedLon)
-                 && !double.IsInfinity(parsedLat)
-                 && !double.IsInfinity(parsedLon))
-        {
-            lat = parsedLat;
-            lon = parsedLon;
-            locationPayload = new JsonObject
-            {
-                ["latitude"] = lat,
-                ["longitude"] = lon
-            };
-        }
-        else if (latitude is not null || longitude is not null)
-        {
-            return Error("invalid_coordinates", "latitude must be -90 to 90 and longitude must be -180 to 180.", invocationId);
-        }
-        else
-        {
-            return Error("missing_location", "Provide place, or latitude and longitude.", invocationId);
-        }
+            ["latitude"] = lat,
+            ["longitude"] = lon
+        };
 
         var result = await _client.GetAsync(lat, lon, start, end, invocationId, cancellationToken).ConfigureAwait(false);
         if (!result.IsSuccess)

@@ -12,51 +12,50 @@ using Microsoft.Extensions.Options;
 namespace LaughingFish.Mcp.Functions;
 
 /// <summary>
-/// Current EPA UV Index for a US place or ZIP. Place uses the shared location
-/// resolver and sends only the postal code. This tool does not call Azure Maps.
+/// Current EPA UV Index for a US ZIP. Latitude and longitude are required
+/// and are not sent to EPA. This tool does not call Azure Maps.
 /// </summary>
 public sealed class GetUvIndexTool
 {
     public const string ToolName = "get_uv_index";
     public const string ToolDescription =
-        "Current EPA UV Index forecast for a US place or five-digit ZIP. Hourly values and the daily index are the issuance EPA is publishing now. No date can be requested and no later days are available. Pass place (preferred) or zip. A place is resolved to a US ZIP before the request. Latitude and longitude are not accepted. Does not invent an index when the place has no ZIP or EPA has no forecast.";
+        "Current EPA UV Index forecast for a five-digit US ZIP. Hourly values and the daily index are the issuance EPA is publishing now. No date can be requested and no later days are available. Latitude, longitude, and zip are required. zip is used as given. Does not invent an index when EPA has no forecast.";
 
     private readonly ILogger<GetUvIndexTool> _logger;
     private readonly IUvApiClient _client;
-    private readonly ILocationResolver _locations;
     private readonly McpOptions _options;
 
     public GetUvIndexTool(
         ILogger<GetUvIndexTool> logger,
         IUvApiClient client,
-        ILocationResolver locations,
         IOptions<McpOptions> options)
     {
         _logger = logger;
         _client = client;
-        _locations = locations;
         _options = options.Value;
     }
 
     [Function(nameof(GetUvIndexTool))]
     public async Task<JsonObject> Run(
         [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
-        [McpToolProperty("place", "Place name, city, or address. Example: Annapolis, Maryland. Preferred when the user did not give a ZIP.", false)] string? place,
-        [McpToolProperty("zip", "Five-digit US ZIP. Used as-is and does not geocode. ZIP+4 keeps the first five digits.", false)] string? zip,
+        [McpToolProperty("latitude", "Latitude in decimal degrees, from -90 to 90.", true)] double? latitude,
+        [McpToolProperty("longitude", "Longitude in decimal degrees, from -180 to 180.", true)] double? longitude,
+        [McpToolProperty("zip", "Five-digit US ZIP. Used as-is. ZIP+4 keeps the first five digits.", true)] string? zip,
         FunctionContext functionContext)
     {
         var started = Stopwatch.StartNew();
         var invocationId = functionContext.InvocationId;
         _logger.LogInformation(
-            "GetUvIndex tool started. InvocationId={InvocationId} Tool={Tool} Place={Place} Zip={Zip}",
+            "GetUvIndex tool started. InvocationId={InvocationId} Tool={Tool} Lat={Lat} Lon={Lon} Zip={Zip}",
             invocationId,
             context.Name,
-            place,
+            latitude,
+            longitude,
             zip);
 
         try
         {
-            var result = await ExecuteAsync(place, zip, invocationId, functionContext.CancellationToken)
+            var result = await ExecuteAsync(latitude, longitude, zip, invocationId, functionContext.CancellationToken)
                 .ConfigureAwait(false);
             _logger.LogInformation(
                 "GetUvIndex tool finished. InvocationId={InvocationId} Ok={Ok} ElapsedMs={ElapsedMs}",
@@ -77,66 +76,33 @@ public sealed class GetUvIndexTool
     }
 
     internal async Task<JsonObject> ExecuteAsync(
-        string? place,
+        double? latitude,
+        double? longitude,
         string? zip,
         string invocationId,
         CancellationToken cancellationToken)
     {
-        JsonNode? location = null;
-        string? resolvedZip = null;
-        if (!string.IsNullOrWhiteSpace(zip))
+        if (!CoordinateInput.TryRead(latitude, longitude, out var lat, out var lon, out var locationError, out var locationMessage))
         {
-            resolvedZip = NormalizeZip(zip);
-            if (resolvedZip is null)
-            {
-                _logger.LogInformation(
-                    "GetUvIndex rejected ZIP. InvocationId={InvocationId} Zip={Zip}",
-                    invocationId,
-                    zip);
-                return Error("invalid_zip", "zip must be a five-digit US ZIP.", invocationId);
-            }
+            return Error(locationError, locationMessage, invocationId);
         }
-        else if (!string.IsNullOrWhiteSpace(place))
+
+        var resolvedZip = NormalizeZip(zip);
+        if (resolvedZip is null)
         {
-            try
-            {
-                var resolved = await _locations.ResolveAsync(place, invocationId, cancellationToken)
-                    .ConfigureAwait(false);
-                location = JsonSerializer.SerializeToNode(new
-                {
-                    query = resolved.Query,
-                    formattedAddress = resolved.FormattedAddress,
-                    locality = resolved.Locality,
-                    adminDistrict = resolved.AdminDistrict,
-                    countryRegion = resolved.CountryRegion,
-                    postalCode = resolved.PostalCode
-                });
-                resolvedZip = NormalizeZip(resolved.PostalCode);
-                if (resolvedZip is null)
-                {
-                    _logger.LogInformation(
-                        "GetUvIndex place has no ZIP. InvocationId={InvocationId} Place={Place} Lat={Lat} Lon={Lon}",
-                        invocationId,
-                        place,
-                        resolved.Latitude,
-                        resolved.Longitude);
-                    return Error("no_postal_code", "No US ZIP was returned for that place.", invocationId, location);
-                }
-            }
-            catch (LocationResolutionException ex)
-            {
-                _logger.LogInformation(
-                    "GetUvIndex place rejected. InvocationId={InvocationId} Error={Error} Place={Place}",
-                    invocationId,
-                    ex.ErrorCode,
-                    place);
-                return Error(ex.ErrorCode, ex.Message, invocationId);
-            }
+            _logger.LogInformation(
+                "GetUvIndex rejected ZIP. InvocationId={InvocationId} Zip={Zip}",
+                invocationId,
+                zip);
+            return Error("invalid_zip", "zip must be a five-digit US ZIP.", invocationId);
         }
-        else
+
+        JsonNode location = new JsonObject
         {
-            return Error("missing_location", "Provide place or zip.", invocationId);
-        }
+            ["latitude"] = lat,
+            ["longitude"] = lon,
+            ["postalCode"] = resolvedZip
+        };
 
         if (!_options.UvApiBound)
         {

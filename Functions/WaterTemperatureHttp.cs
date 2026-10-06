@@ -35,17 +35,15 @@ public sealed class WaterTemperatureHttp
         try
         {
             var values = await ToolHttpRequest.ReadAsync(req, context.CancellationToken).ConfigureAwait(false);
-            var place = ToolHttpRequest.ReadString(values, "place");
             var latitude = ReadDouble(values, "latitude") ?? ReadDouble(values, "lat");
             var longitude = ReadDouble(values, "longitude") ?? ReadDouble(values, "lon");
             var nearest = ReadInt(values, "nearest");
             var days = ReadInt(values, "days");
             var maxDistanceMiles = ReadInt(values, "maxDistanceMiles");
             _logger.LogInformation(
-                "GetWaterTemperature HTTP started. InvocationId={InvocationId} Method={Method} Place={Place} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles}",
+                "GetWaterTemperature HTTP started. InvocationId={InvocationId} Method={Method} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles}",
                 invocationId,
                 req.Method,
-                place,
                 latitude,
                 longitude,
                 nearest,
@@ -53,7 +51,6 @@ public sealed class WaterTemperatureHttp
                 maxDistanceMiles);
 
             var result = await _tool.ExecuteAsync(
-                place,
                 latitude,
                 longitude,
                 nearest,

@@ -7,15 +7,14 @@ using Microsoft.Extensions.Logging;
 namespace LaughingFish.Mcp.Functions;
 
 /// <summary>
-/// Shared place-to-coordinates tool. Weather, water temp, and solar tools
-/// should call ILocationResolver directly; this tool is for the model when
-/// it only needs coordinates.
+/// The only tool that accepts a place name. Returns latitude, longitude,
+/// and the US postal code. Domain tools do not geocode.
 /// </summary>
 public sealed class ResolveLocationTool
 {
     public const string ToolName = "resolve_location";
     public const string ToolDescription =
-        "Converts a place name, city, or address into latitude, longitude, and the US postal code when Azure Maps returns one. Use when coordinates are needed by themselves. Does not invent coordinates or a postal code when Maps fails.";
+        "Converts a place name, city, address, or ZIP into latitude, longitude, and the US postal code when one is returned. A repeated place is served from cache when present. Does not invent coordinates or a postal code when the lookup fails.";
 
     private readonly ILogger<ResolveLocationTool> _logger;
     private readonly ILocationResolver _resolver;
@@ -29,7 +28,7 @@ public sealed class ResolveLocationTool
     [Function(nameof(ResolveLocationTool))]
     public async Task<object> Run(
         [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
-        [McpToolProperty("place", "Place name, city, or address. Example: Anchorage, Alaska.", true)] string place,
+        [McpToolProperty("place", "Place name, city, address, or ZIP. Example: Anchorage, Alaska.", true)] string place,
         FunctionContext functionContext)
     {
         var started = Stopwatch.StartNew();

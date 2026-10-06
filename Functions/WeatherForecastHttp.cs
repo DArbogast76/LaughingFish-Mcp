@@ -34,23 +34,20 @@ public sealed class WeatherForecastHttp
         try
         {
             var values = await ToolHttpRequest.ReadAsync(req, context.CancellationToken).ConfigureAwait(false);
-            var place = ToolHttpRequest.ReadString(values, "place");
             var latitude = ReadDouble(values, "latitude") ?? ReadDouble(values, "lat");
             var longitude = ReadDouble(values, "longitude") ?? ReadDouble(values, "lon");
             var hours = ReadInt(values, "hours");
             var days = ReadInt(values, "days");
             _logger.LogInformation(
-                "GetWeatherForecast HTTP started. InvocationId={InvocationId} Method={Method} Place={Place} Lat={Lat} Lon={Lon} Hours={Hours} Days={Days}",
+                "GetWeatherForecast HTTP started. InvocationId={InvocationId} Method={Method} Lat={Lat} Lon={Lon} Hours={Hours} Days={Days}",
                 invocationId,
                 req.Method,
-                place,
                 latitude,
                 longitude,
                 hours,
                 days);
 
             var result = await _tool.ExecuteAsync(
-                place,
                 latitude,
                 longitude,
                 hours,

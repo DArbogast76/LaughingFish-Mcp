@@ -17,31 +17,28 @@ public sealed class GetTidePredictionsTool
 {
     public const string ToolName = "get_tide_predictions";
     public const string ToolDescription =
-        "Predicted high and low tide turns for a place and date range. Pass place or latitude and longitude. Pass start and end as yyyy-MM-dd, or omit them for today. Inclusive, at most 31 days. Convert relative dates before calling. Do not pass a time zone. Optional nearest 1, 3, or 5 (default 1). Optional maxDistanceMiles 10, 25, or 50 (default 25). Heights are predicted above Mean Lower Low Water, in feet and meters. type H is a high tide. type L is a low tide. This is not an observed water level, not tide direction, and not a continuous curve. no_station_within_range and no_predictions_in_window are successful empty results. Do not invent a tide.";
+        "Predicted high and low tide turns for a date range. Latitude and longitude are required. Pass start and end as yyyy-MM-dd, or omit them for today. Inclusive, at most 31 days. Convert relative dates before calling. Do not pass a time zone. Optional nearest 1, 3, or 5 (default 1). Optional maxDistanceMiles 10, 25, or 50 (default 25). Heights are predicted above Mean Lower Low Water, in feet and meters. type H is a high tide. type L is a low tide. This is not an observed water level, not tide direction, and not a continuous curve. no_station_within_range and no_predictions_in_window are successful empty results. Do not invent a tide.";
 
     private static readonly int[] AllowedNearest = [1, 3, 5];
     private static readonly int[] AllowedMaxDistance = [10, 25, 50];
 
     private readonly ILogger<GetTidePredictionsTool> _logger;
     private readonly ITideApiClient _client;
-    private readonly ILocationResolver _locations;
 
     public GetTidePredictionsTool(
         ILogger<GetTidePredictionsTool> logger,
-        ITideApiClient client,
-        ILocationResolver locations)
+        ITideApiClient client
+    )
     {
         _logger = logger;
         _client = client;
-        _locations = locations;
     }
 
     [Function(nameof(GetTidePredictionsTool))]
     public async Task<object> Run(
         [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
-        [McpToolProperty("place", "Place name, city, or address. Preferred over raw coordinates.", false)] string? place,
-        [McpToolProperty("latitude", "Latitude in decimal degrees when place is not provided.", false)] double? latitude,
-        [McpToolProperty("longitude", "Longitude in decimal degrees when place is not provided.", false)] double? longitude,
+        [McpToolProperty("latitude", "Latitude in decimal degrees, from -90 to 90.", true)] double? latitude,
+        [McpToolProperty("longitude", "Longitude in decimal degrees, from -180 to 180.", true)] double? longitude,
         [McpToolProperty("start", "Window start. yyyy-MM-dd. Defaults to today when omitted.", false)] string? start,
         [McpToolProperty("end", "Window end. yyyy-MM-dd, inclusive. Defaults to start. At most 31 days.", false)] string? end,
         [McpToolProperty("startDate", "Same as start. yyyy-MM-dd.", false)] string? startDate,
@@ -53,11 +50,10 @@ public sealed class GetTidePredictionsTool
         var started = Stopwatch.StartNew();
         var invocationId = functionContext.InvocationId;
         _logger.LogInformation(
-            "GetTidePredictions tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Start={Start} End={End} StartDate={StartDate} EndDate={EndDate} Nearest={Nearest} MaxDistanceMiles={MaxDistanceMiles}",
+            "GetTidePredictions tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Lat={Lat} Lon={Lon} Start={Start} End={End} StartDate={StartDate} EndDate={EndDate} Nearest={Nearest} MaxDistanceMiles={MaxDistanceMiles}",
             invocationId,
             context.Name,
             context.SessionId,
-            place,
             latitude,
             longitude,
             start,
@@ -70,7 +66,6 @@ public sealed class GetTidePredictionsTool
         try
         {
             var result = await ExecuteAsync(
-                place,
                 latitude,
                 longitude,
                 start,
@@ -100,7 +95,6 @@ public sealed class GetTidePredictionsTool
     }
 
     internal async Task<JsonObject> ExecuteAsync(
-        string? place,
         double? latitude,
         double? longitude,
         string? start,
@@ -137,49 +131,16 @@ public sealed class GetTidePredictionsTool
             return Error("invalid_window", windowError, invocationId);
         }
 
-        double lat;
-        double lon;
-        JsonNode? locationPayload = null;
+        if (!CoordinateInput.TryRead(latitude, longitude, out var lat, out var lon, out var locationError, out var locationMessage))
+        {
+            return Error(locationError, locationMessage, invocationId);
+        }
 
-        if (!string.IsNullOrWhiteSpace(place))
+        JsonNode locationPayload = new JsonObject
         {
-            try
-            {
-                var resolved = await _locations.ResolveAsync(place, invocationId, cancellationToken).ConfigureAwait(false);
-                lat = resolved.Latitude;
-                lon = resolved.Longitude;
-                locationPayload = JsonSerializer.SerializeToNode(ResolveLocationTool.ToPayload(resolved));
-            }
-            catch (LocationResolutionException ex)
-            {
-                _logger.LogInformation(
-                    "GetTidePredictions location failed. InvocationId={InvocationId} Error={Error}",
-                    invocationId,
-                    ex.ErrorCode);
-                return Error(ex.ErrorCode, ex.Message, invocationId);
-            }
-        }
-        else if (latitude is { } parsedLat && longitude is { } parsedLon)
-        {
-            if (parsedLat is < -90 or > 90 || parsedLon is < -180 or > 180
-                || double.IsNaN(parsedLat) || double.IsNaN(parsedLon)
-                || double.IsInfinity(parsedLat) || double.IsInfinity(parsedLon))
-            {
-                return Error("invalid_coordinates", "latitude must be -90 to 90 and longitude must be -180 to 180.", invocationId);
-            }
-
-            lat = parsedLat;
-            lon = parsedLon;
-            locationPayload = new JsonObject
-            {
-                ["latitude"] = lat,
-                ["longitude"] = lon
-            };
-        }
-        else
-        {
-            return Error("missing_location", "Provide place, or latitude and longitude.", invocationId);
-        }
+            ["latitude"] = lat,
+            ["longitude"] = lon
+        };
 
         var result = await _client.GetAsync(
             lat,

@@ -34,7 +34,6 @@ public sealed class LunarCycleHttp
         try
         {
             var values = await ToolHttpRequest.ReadAsync(req, context.CancellationToken).ConfigureAwait(false);
-            var place = ToolHttpRequest.ReadString(values, "place");
             var date = ToolHttpRequest.ReadString(values, "date");
             var startDate = ToolHttpRequest.ReadString(values, "startDate");
             var endDate = ToolHttpRequest.ReadString(values, "endDate");
@@ -42,10 +41,9 @@ public sealed class LunarCycleHttp
             var longitude = ReadDouble(values, "longitude") ?? ReadDouble(values, "lon");
 
             _logger.LogInformation(
-                "GetLunarCycle HTTP started. InvocationId={InvocationId} Method={Method} Place={Place} Lat={Lat} Lon={Lon} Date={Date} StartDate={StartDate} EndDate={EndDate}",
+                "GetLunarCycle HTTP started. InvocationId={InvocationId} Method={Method} Lat={Lat} Lon={Lon} Date={Date} StartDate={StartDate} EndDate={EndDate}",
                 invocationId,
                 req.Method,
-                place,
                 latitude,
                 longitude,
                 date,
@@ -53,7 +51,6 @@ public sealed class LunarCycleHttp
                 endDate);
 
             var result = await _tool.ExecuteAsync(
-                place,
                 latitude,
                 longitude,
                 date,

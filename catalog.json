@@ -1,10 +1,10 @@
 {
     "ok": true,
     "schema": "laughingfish.mcp.toolCatalog.v1",
-    "invocationId": "253051d4-8d26-4a5e-b67f-640ab24345b7",
-    "catalogVersion": "1",
+    "invocationId": "b8dff182-87d5-4c89-b80b-7a6fed6ac053",
+    "catalogVersion": "2",
     "path": "/api/v1/tools",
-    "toolCount": 9,
+    "toolCount": 12,
     "calling": {
         "methods": [
             "GET",
@@ -12,7 +12,7 @@
         ],
         "auth": "anonymous",
         "query": "Query parameters are strings. A POST JSON object wins when the same key is on the query string. Invalid JSON is ignored and the query stands.",
-        "conditionTools": "get_lunar_cycle, get_tide_predictions, get_sea_conditions, get_uv_index, and get_weather_alerts return HTTP 200. A tool failure is HTTP 200 with ok false, status, and message. It is not an empty success.",
+        "conditionTools": "get_sunrise_sunset, get_weather_forecast, get_water_temperature, get_lunar_cycle, get_tide_predictions, get_sea_conditions, get_uv_index, and get_weather_alerts return HTTP 200. A tool failure is HTTP 200 with ok false, error, and message. It is not an empty success.",
         "speciesGuideTools": "list_species, list_guide_topics, search_species_guides, and get_chapter return the tool result status. Success is 200. A bad request is 400. A missing chapter or species is 404. A downstream failure is 502.",
         "hostFailure": "A thrown host failure is HTTP 500 with ok false."
     },
@@ -120,6 +120,177 @@
                 "The HTTP status follows the tool result: 200 on success, 400 for a bad request, 404 when the chapter or species is missing, 502 when the downstream call fails."
             ],
             "example": "/api/v1/tools/get-chapter?species=haddock&topic=time-temperature"
+        },
+        {
+            "name": "get_sunrise_sunset",
+            "methods": [
+                "GET",
+                "POST"
+            ],
+            "path": "/api/v1/tools/get-sunrise-sunset",
+            "instruction": "Returns sunrise, sunset, dawn, dusk, civil twilight, and solar noon for a place and date. Pass place, or latitude and longitude. date is yyyy-MM-dd and defaults to today's UTC date. timeZone is an optional IANA or Windows id. This is not weather and not water temperature.",
+            "inputs": [
+                {
+                    "name": "place",
+                    "required": false,
+                    "type": "string",
+                    "rule": "Place name. Required when latitude and longitude are omitted."
+                },
+                {
+                    "name": "latitude",
+                    "required": false,
+                    "type": "number",
+                    "rule": "-90 to 90. Required with longitude when place is omitted.",
+                    "aliases": [
+                        "lat"
+                    ]
+                },
+                {
+                    "name": "longitude",
+                    "required": false,
+                    "type": "number",
+                    "rule": "-180 to 180. Required with latitude when place is omitted.",
+                    "aliases": [
+                        "lon"
+                    ]
+                },
+                {
+                    "name": "date",
+                    "required": false,
+                    "type": "string",
+                    "rule": "yyyy-MM-dd. Default is today's UTC date."
+                },
+                {
+                    "name": "timeZone",
+                    "required": false,
+                    "type": "string",
+                    "rule": "Optional IANA or Windows time zone id. Example: America/New_York."
+                }
+            ],
+            "success": "ok true, the resolved location, and the solar times.",
+            "errors": [
+                "missing_location",
+                "invalid_coordinates",
+                "invalid_date"
+            ],
+            "example": "/api/v1/tools/get-sunrise-sunset?place=Annapolis%2C%20MD&date=2026-10-06"
+        },
+        {
+            "name": "get_weather_forecast",
+            "methods": [
+                "GET",
+                "POST"
+            ],
+            "path": "/api/v1/tools/get-weather-forecast",
+            "instruction": "Returns an hourly air weather forecast: temperature, rain, wind, humidity, sky cover, and conditions. Pass place, or latitude and longitude. hours is 24, 48, or 72. days is 1, 3, or 7. Do not send both. Omit both for 24 hours. This is a forecast, not a current observation.",
+            "inputs": [
+                {
+                    "name": "place",
+                    "required": false,
+                    "type": "string",
+                    "rule": "Place name. Required when latitude and longitude are omitted."
+                },
+                {
+                    "name": "latitude",
+                    "required": false,
+                    "type": "number",
+                    "rule": "-90 to 90. Required with longitude when place is omitted.",
+                    "aliases": [
+                        "lat"
+                    ]
+                },
+                {
+                    "name": "longitude",
+                    "required": false,
+                    "type": "number",
+                    "rule": "-180 to 180. Required with latitude when place is omitted.",
+                    "aliases": [
+                        "lon"
+                    ]
+                },
+                {
+                    "name": "hours",
+                    "required": false,
+                    "type": "integer",
+                    "rule": "24, 48, or 72. Do not send with days. Default 24 when both are omitted."
+                },
+                {
+                    "name": "days",
+                    "required": false,
+                    "type": "integer",
+                    "rule": "1, 3, or 7. Do not send with hours."
+                }
+            ],
+            "success": "ok true, hoursRequested, hoursReturned, and the forecast hours.",
+            "errors": [
+                "missing_location",
+                "invalid_coordinates",
+                "invalid_window"
+            ],
+            "example": "/api/v1/tools/get-weather-forecast?place=Annapolis%2C%20MD&days=1"
+        },
+        {
+            "name": "get_water_temperature",
+            "methods": [
+                "GET",
+                "POST"
+            ],
+            "path": "/api/v1/tools/get-water-temperature",
+            "instruction": "Returns observed water temperature: the current reading and hourly history for trend. Days is lookback, not a forecast. Pass place, or latitude and longitude. nearest is 1, 3, or 5 and defaults to 1. days is 1, 3, 7, 30, or 90 and defaults to 1. maxDistanceMiles is 10, 25, or 50 and defaults to 25. This route returns JSON only and does not stream a chart image.",
+            "inputs": [
+                {
+                    "name": "place",
+                    "required": false,
+                    "type": "string",
+                    "rule": "Place name. Required when latitude and longitude are omitted."
+                },
+                {
+                    "name": "latitude",
+                    "required": false,
+                    "type": "number",
+                    "rule": "-90 to 90. Required with longitude when place is omitted.",
+                    "aliases": [
+                        "lat"
+                    ]
+                },
+                {
+                    "name": "longitude",
+                    "required": false,
+                    "type": "number",
+                    "rule": "-180 to 180. Required with latitude when place is omitted.",
+                    "aliases": [
+                        "lon"
+                    ]
+                },
+                {
+                    "name": "nearest",
+                    "required": false,
+                    "type": "integer",
+                    "rule": "1, 3, or 5. Default 1."
+                },
+                {
+                    "name": "days",
+                    "required": false,
+                    "type": "integer",
+                    "rule": "1, 3, 7, 30, or 90. Default 1. Lookback, not a forecast."
+                },
+                {
+                    "name": "maxDistanceMiles",
+                    "required": false,
+                    "type": "integer",
+                    "rule": "10, 25, or 50. Default 25."
+                }
+            ],
+            "success": "ok true and the observed readings for the stations in range.",
+            "emptySuccess": "no_station_within_range is a successful empty result.",
+            "errors": [
+                "missing_location",
+                "invalid_coordinates",
+                "invalid_nearest",
+                "invalid_days",
+                "invalid_max_distance"
+            ],
+            "example": "/api/v1/tools/get-water-temperature?place=Annapolis%2C%20MD&days=7"
         },
         {
             "name": "get_lunar_cycle",
@@ -391,18 +562,6 @@
     "notOnHttp": [
         {
             "name": "resolve_location",
-            "reason": "MCP only. No HTTP route."
-        },
-        {
-            "name": "get_sunrise_sunset",
-            "reason": "MCP only. No HTTP route."
-        },
-        {
-            "name": "get_weather_forecast",
-            "reason": "MCP only. No HTTP route."
-        },
-        {
-            "name": "get_water_temperature",
             "reason": "MCP only. No HTTP route."
         },
         {

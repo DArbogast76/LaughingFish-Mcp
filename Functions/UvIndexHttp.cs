@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Globalization;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
@@ -32,16 +34,18 @@ public sealed class UvIndexHttp
         try
         {
             var values = await ToolHttpRequest.ReadAsync(req, context.CancellationToken).ConfigureAwait(false);
-            var place = ToolHttpRequest.ReadString(values, "place");
+            var latitude = ReadDouble(values, "latitude") ?? ReadDouble(values, "lat");
+            var longitude = ReadDouble(values, "longitude") ?? ReadDouble(values, "lon");
             var zip = ToolHttpRequest.ReadString(values, "zip");
             _logger.LogInformation(
-                "GetUvIndex HTTP started. InvocationId={InvocationId} Method={Method} Place={Place} Zip={Zip}",
+                "GetUvIndex HTTP started. InvocationId={InvocationId} Method={Method} Lat={Lat} Lon={Lon} Zip={Zip}",
                 invocationId,
                 req.Method,
-                place,
+                latitude,
+                longitude,
                 zip);
 
-            var result = await _tool.ExecuteAsync(place, zip, invocationId, context.CancellationToken)
+            var result = await _tool.ExecuteAsync(latitude, longitude, zip, invocationId, context.CancellationToken)
                 .ConfigureAwait(false);
             _logger.LogInformation(
                 "GetUvIndex HTTP finished. InvocationId={InvocationId} Ok={Ok} ElapsedMs={ElapsedMs}",
@@ -67,5 +71,18 @@ public sealed class UvIndexHttp
                 StatusCode = StatusCodes.Status502BadGateway
             };
         }
+    }
+
+    private static double? ReadDouble(IReadOnlyDictionary<string, JsonElement> values, string key)
+    {
+        var raw = ToolHttpRequest.ReadString(values, key);
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : null;
     }
 }

@@ -17,7 +17,7 @@ public sealed class GetSeaConditionsTool
 {
     public const string ToolName = "get_sea_conditions";
     public const string ToolDescription =
-        "Observed sea conditions at the nearest reporting stations: significant wave height, dominant and average period, wave direction, sustained wind, gust, barometric pressure, and station air temperature. Recent history, not a forecast and not a continuous sea-state curve. Pass place (preferred) or latitude and longitude. A place is resolved to coordinates before the query. Optional nearest 1, 3, or 5 (default 3). Optional days 1, 3, 7, 45, or 90 (default 1). Days is trailing UTC hours of lookback, not a date range. days 1 is the current observed sea. days 3 or 7 shows whether the sea has been building or easing. days 45 or 90 is a longer observed pattern. None of these is a forecast. Optional maxDistanceMiles 10, 25, or 50 (default 50). sensors says which of wave height, wave direction, wind, and pressure that station reports. no_station_within_range and no_readings_in_window are successful empty results. Do not invent a wave height, period, or wind.";
+        "Observed sea conditions at the nearest reporting stations: significant wave height, dominant and average period, wave direction, sustained wind, gust, barometric pressure, and station air temperature. Recent history, not a forecast and not a continuous sea-state curve. Latitude and longitude are required. Optional nearest 1, 3, or 5 (default 3). Optional days 1, 3, 7, 45, or 90 (default 1). Days is trailing UTC hours of lookback, not a date range. days 1 is the current observed sea. days 3 or 7 shows whether the sea has been building or easing. days 45 or 90 is a longer observed pattern. None of these is a forecast. Optional maxDistanceMiles 10, 25, or 50 (default 50). sensors says which of wave height, wave direction, wind, and pressure that station reports. no_station_within_range and no_readings_in_window are successful empty results. Do not invent a wave height, period, or wind.";
 
     public const string PublicSummary =
         "Observed sea conditions from stored meteorological reports. This is the recent history at the reporting station, not a forecast and not a continuous sea-state curve.";
@@ -34,24 +34,21 @@ public sealed class GetSeaConditionsTool
 
     private readonly ILogger<GetSeaConditionsTool> _logger;
     private readonly ISeaConditionsApiClient _client;
-    private readonly ILocationResolver _locations;
 
     public GetSeaConditionsTool(
         ILogger<GetSeaConditionsTool> logger,
-        ISeaConditionsApiClient client,
-        ILocationResolver locations)
+        ISeaConditionsApiClient client
+    )
     {
         _logger = logger;
         _client = client;
-        _locations = locations;
     }
 
     [Function(nameof(GetSeaConditionsTool))]
     public async Task<object> Run(
         [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
-        [McpToolProperty("place", "Place name, city, or address. Preferred over raw coordinates. Resolved to coordinates before the query.", false)] string? place,
-        [McpToolProperty("latitude", "Latitude in decimal degrees when place is not provided.", false)] double? latitude,
-        [McpToolProperty("longitude", "Longitude in decimal degrees when place is not provided.", false)] double? longitude,
+        [McpToolProperty("latitude", "Latitude in decimal degrees, from -90 to 90.", true)] double? latitude,
+        [McpToolProperty("longitude", "Longitude in decimal degrees, from -180 to 180.", true)] double? longitude,
         [McpToolProperty("nearest", "How many in-range stations to return. Allowed: 1, 3, 5. Default 3.", false)] int? nearest,
         [McpToolProperty("days", "Trailing UTC hours of lookback. Allowed: 1, 3, 7, 45, 90. Default 1. Not a date range and not a forecast.", false)] int? days,
         [McpToolProperty("maxDistanceMiles", "Maximum station distance in miles. Allowed: 10, 25, 50. Default 50.", false)] int? maxDistanceMiles,
@@ -60,11 +57,10 @@ public sealed class GetSeaConditionsTool
         var started = Stopwatch.StartNew();
         var invocationId = functionContext.InvocationId;
         _logger.LogInformation(
-            "GetSeaConditions tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles}",
+            "GetSeaConditions tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles}",
             invocationId,
             context.Name,
             context.SessionId,
-            place,
             latitude,
             longitude,
             nearest,
@@ -74,7 +70,6 @@ public sealed class GetSeaConditionsTool
         try
         {
             var result = await ExecuteAsync(
-                place,
                 latitude,
                 longitude,
                 nearest,
@@ -101,7 +96,6 @@ public sealed class GetSeaConditionsTool
     }
 
     internal async Task<JsonObject> ExecuteAsync(
-        string? place,
         double? latitude,
         double? longitude,
         int? nearest,
@@ -125,49 +119,16 @@ public sealed class GetSeaConditionsTool
             return Error("invalid_max_distance", "maxDistanceMiles must be 10, 25, or 50.", invocationId);
         }
 
-        double lat;
-        double lon;
-        JsonNode? locationPayload;
+        if (!CoordinateInput.TryRead(latitude, longitude, out var lat, out var lon, out var locationError, out var locationMessage))
+        {
+            return Error(locationError, locationMessage, invocationId);
+        }
 
-        if (!string.IsNullOrWhiteSpace(place))
+        JsonNode locationPayload = new JsonObject
         {
-            try
-            {
-                var resolved = await _locations.ResolveAsync(place, invocationId, cancellationToken).ConfigureAwait(false);
-                lat = resolved.Latitude;
-                lon = resolved.Longitude;
-                locationPayload = JsonSerializer.SerializeToNode(ResolveLocationTool.ToPayload(resolved));
-            }
-            catch (LocationResolutionException ex)
-            {
-                _logger.LogInformation(
-                    "GetSeaConditions location failed. InvocationId={InvocationId} Error={Error}",
-                    invocationId,
-                    ex.ErrorCode);
-                return Error(ex.ErrorCode, ex.Message, invocationId);
-            }
-        }
-        else if (latitude is { } parsedLat && longitude is { } parsedLon)
-        {
-            if (parsedLat is < -90 or > 90 || parsedLon is < -180 or > 180
-                || double.IsNaN(parsedLat) || double.IsNaN(parsedLon)
-                || double.IsInfinity(parsedLat) || double.IsInfinity(parsedLon))
-            {
-                return Error("invalid_coordinates", "latitude must be -90 to 90 and longitude must be -180 to 180.", invocationId);
-            }
-
-            lat = parsedLat;
-            lon = parsedLon;
-            locationPayload = new JsonObject
-            {
-                ["latitude"] = lat,
-                ["longitude"] = lon
-            };
-        }
-        else
-        {
-            return Error("missing_location", "Provide place, or latitude and longitude.", invocationId);
-        }
+            ["latitude"] = lat,
+            ["longitude"] = lon
+        };
 
         var result = await _client.GetAsync(
             lat,
