@@ -45,6 +45,46 @@ public static class ToolCatalog
             "ok true and one chapter body.",
             null,
             "/api/v1/tools/get-chapter?species=haddock&topic=time-temperature"),
+        Conditions("get_sunrise_sunset", "getSunriseSunset", SunriseSunsetHttp.Route,
+            "Returns sunrise, sunset, dawn, dusk, civil twilight, and solar noon for a place and date. Pass place, or latitude and longitude. date is yyyy-MM-dd and defaults to today's UTC date. timeZone is an optional IANA or Windows id. This is not weather and not water temperature.",
+            [
+                Input("place", false, "string", "Place name. Required when latitude and longitude are omitted."),
+                Input("latitude", false, "number", "-90 to 90. Required with longitude when place is omitted.", ["lat"]),
+                Input("longitude", false, "number", "-180 to 180. Required with latitude when place is omitted.", ["lon"]),
+                Input("date", false, "string", "yyyy-MM-dd. Default is today's UTC date."),
+                Input("timeZone", false, "string", "Optional IANA or Windows time zone id. Example: America/New_York.")
+            ],
+            "ok true, the resolved location, and the solar times.",
+            null,
+            ["missing_location", "invalid_coordinates", "invalid_date"],
+            "/api/v1/tools/get-sunrise-sunset?place=Annapolis%2C%20MD&date=2026-10-06"),
+        Conditions("get_weather_forecast", "getWeatherForecast", WeatherForecastHttp.Route,
+            "Returns an hourly air weather forecast: temperature, rain, wind, humidity, sky cover, and conditions. Pass place, or latitude and longitude. hours is 24, 48, or 72. days is 1, 3, or 7. Do not send both. Omit both for 24 hours. This is a forecast, not a current observation.",
+            [
+                Input("place", false, "string", "Place name. Required when latitude and longitude are omitted."),
+                Input("latitude", false, "number", "-90 to 90. Required with longitude when place is omitted.", ["lat"]),
+                Input("longitude", false, "number", "-180 to 180. Required with latitude when place is omitted.", ["lon"]),
+                Input("hours", false, "integer", "24, 48, or 72. Do not send with days. Default 24 when both are omitted."),
+                Input("days", false, "integer", "1, 3, or 7. Do not send with hours.")
+            ],
+            "ok true, hoursRequested, hoursReturned, and the forecast hours.",
+            null,
+            ["missing_location", "invalid_coordinates", "invalid_window"],
+            "/api/v1/tools/get-weather-forecast?place=Annapolis%2C%20MD&days=1"),
+        Conditions("get_water_temperature", "getWaterTemperature", WaterTemperatureHttp.Route,
+            "Returns observed water temperature: the current reading and hourly history for trend. Days is lookback, not a forecast. Pass place, or latitude and longitude. nearest is 1, 3, or 5 and defaults to 1. days is 1, 3, 7, 30, or 90 and defaults to 1. maxDistanceMiles is 10, 25, or 50 and defaults to 25. This route returns JSON only and does not stream a chart image.",
+            [
+                Input("place", false, "string", "Place name. Required when latitude and longitude are omitted."),
+                Input("latitude", false, "number", "-90 to 90. Required with longitude when place is omitted.", ["lat"]),
+                Input("longitude", false, "number", "-180 to 180. Required with latitude when place is omitted.", ["lon"]),
+                Input("nearest", false, "integer", "1, 3, or 5. Default 1."),
+                Input("days", false, "integer", "1, 3, 7, 30, or 90. Default 1. Lookback, not a forecast."),
+                Input("maxDistanceMiles", false, "integer", "10, 25, or 50. Default 25.")
+            ],
+            "ok true and the observed readings for the stations in range.",
+            "no_station_within_range is a successful empty result.",
+            ["missing_location", "invalid_coordinates", "invalid_nearest", "invalid_days", "invalid_max_distance"],
+            "/api/v1/tools/get-water-temperature?place=Annapolis%2C%20MD&days=7"),
         Conditions("get_lunar_cycle", "getLunarCycle", LunarCycleHttp.Route,
             "Returns the lunar almanac for a place and local date range. Pass place, or latitude and longitude. Pass date, or startDate and endDate. Omit the date for today. The range is inclusive and at most 31 days. Do not send a time zone. This is not a tide prediction.",
             [
@@ -113,9 +153,6 @@ public static class ToolCatalog
     public static IReadOnlyList<ToolCatalogGap> NotOnHttp { get; } =
     [
         new("resolve_location", "MCP only. No HTTP route."),
-        new("get_sunrise_sunset", "MCP only. No HTTP route."),
-        new("get_weather_forecast", "MCP only. No HTTP route."),
-        new("get_water_temperature", "MCP only. No HTTP route."),
         new("server_health", "MCP only. Host smoke test is GET /api/health and is not this tool.")
     ];
 

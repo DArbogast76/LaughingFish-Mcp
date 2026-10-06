@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using ModelContextProtocol.Protocol;
 using System.Text.Json;
 using LaughingFish.Mcp.Clients;
 using LaughingFish.Mcp.Configuration;
@@ -19,7 +18,7 @@ public sealed class GetWaterTemperatureTool
 {
     public const string ToolName = "get_water_temperature";
     public const string ToolDescription =
-        "Observed hourly water temperature near a U.S. place or latitude and longitude. This is measurement history, not a forecast and not air temperature. Returns the nearest stations inside maxDistanceMiles that have a reading in the lookback window, with current temperature, coverage, and hourly history. Optional nearest 1, 3, or 5 (default 1). Optional days 1, 3, 7, 30, or 90 (default 1); days is lookback. Optional maxDistanceMiles 10, 25, or 50 (default 25). Optional includeChart true asks for the PNG chart of the nearest station for the same days window. Default false. No chart image is returned unless includeChart is true. status no_station_within_range means none was inside the radius. Does not forecast water temperature and does not return air temperature, tides, or wind. Do not invent a temperature when the place cannot be resolved or the request fails.";
+        "Observed water temperature: current reading and hourly history for trend (warming, cooling, or steady). Days is lookback, not a forecast. Pass place (preferred) or latitude and longitude. Optional nearest 1, 3, or 5 (default 1). Optional days 1, 3, 7, 30, or 90 (default 1). Optional maxDistanceMiles 10, 25, or 50 (default 25). Returns no station when none is within range. Does not forecast water temperature and does not return air weather or sunrise. Do not invent a temperature when Maps or the API fails.";
 
     private static readonly int[] AllowedNearest = [1, 3, 5];
     private static readonly int[] AllowedDays = [1, 3, 7, 30, 90];
@@ -51,14 +50,13 @@ public sealed class GetWaterTemperatureTool
         [McpToolProperty("nearest", "How many in-range stations to return. Allowed: 1, 3, 5. Default 1.", false)] int? nearest,
         [McpToolProperty("days", "History lookback in days for trend. Allowed: 1, 3, 7, 30, 90. Default 1. Not a forecast.", false)] int? days,
         [McpToolProperty("maxDistanceMiles", "Maximum station distance in miles. Allowed: 10, 25, 50. Default 25.", false)] int? maxDistanceMiles,
-        [McpToolProperty("includeChart", "Optional. True to include the nearest station PNG chart for the same days window. Default false. The model decides.", false)] bool? includeChart,
         FunctionContext functionContext)
     {
         var started = Stopwatch.StartNew();
         var invocationId = functionContext.InvocationId;
 
         _logger.LogInformation(
-            "GetWaterTemperature tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles} IncludeChart={IncludeChart}",
+            "GetWaterTemperature tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles}",
             invocationId,
             context.Name,
             context.SessionId,
@@ -67,9 +65,30 @@ public sealed class GetWaterTemperatureTool
             longitude,
             nearest,
             days,
-            maxDistanceMiles,
-            includeChart);
+            maxDistanceMiles);
 
+        return await ExecuteAsync(
+            place,
+            latitude,
+            longitude,
+            nearest,
+            days,
+            maxDistanceMiles,
+            invocationId,
+            functionContext.CancellationToken).ConfigureAwait(false);
+    }
+
+    internal async Task<object> ExecuteAsync(
+        string? place,
+        double? latitude,
+        double? longitude,
+        int? nearest,
+        int? days,
+        int? maxDistanceMiles,
+        string invocationId,
+        CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.StartNew();
         try
         {
             if (!TryResolveInt(nearest, AllowedNearest, 1, out var resolvedNearest))
@@ -95,7 +114,7 @@ public sealed class GetWaterTemperatureTool
             {
                 try
                 {
-                    var resolved = await _locations.ResolveAsync(place, invocationId, functionContext.CancellationToken)
+                    var resolved = await _locations.ResolveAsync(place, invocationId, cancellationToken)
                         .ConfigureAwait(false);
                     lat = resolved.Latitude;
                     lon = resolved.Longitude;
@@ -134,16 +153,14 @@ public sealed class GetWaterTemperatureTool
                 return Error("missing_location", "Provide place, or latitude and longitude.", invocationId);
             }
 
-            var wantChart = includeChart == true;
             var result = await _client.GetAsync(
                 lat,
                 lon,
                 resolvedNearest,
                 resolvedDays,
                 resolvedMiles,
-                wantChart,
                 invocationId,
-                functionContext.CancellationToken).ConfigureAwait(false);
+                cancellationToken).ConfigureAwait(false);
 
             object? payload = null;
             if (!string.IsNullOrWhiteSpace(result.Body))
@@ -181,7 +198,7 @@ public sealed class GetWaterTemperatureTool
                 };
             }
 
-            var textPayload = new
+            return new
             {
                 ok = true,
                 invocationId,
@@ -189,27 +206,6 @@ public sealed class GetWaterTemperatureTool
                 statusCode = result.StatusCode,
                 location = locationPayload ?? new { latitude = lat, longitude = lon },
                 result = payload
-            };
-
-            if (result.ChartPng is not { Length: > 0 } png)
-            {
-                return textPayload;
-            }
-
-            _logger.LogInformation(
-                "GetWaterTemperature tool returning chart. InvocationId={InvocationId} Bytes={Bytes} ElapsedMs={ElapsedMs}",
-                invocationId,
-                png.Length,
-                started.ElapsedMilliseconds);
-
-            return new List<ContentBlock>
-            {
-                new TextContentBlock { Text = JsonSerializer.Serialize(textPayload) },
-                new ImageContentBlock
-                {
-                    Data = Convert.ToBase64String(png),
-                    MimeType = "image/png"
-                }
             };
         }
         catch (Exception ex)

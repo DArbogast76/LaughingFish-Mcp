@@ -62,6 +62,26 @@ public sealed class GetSunriseSunsetTool
             date,
             timeZone);
 
+        return await ExecuteAsync(
+            place,
+            latitude,
+            longitude,
+            date,
+            timeZone,
+            invocationId,
+            functionContext.CancellationToken).ConfigureAwait(false);
+    }
+
+    internal async Task<object> ExecuteAsync(
+        string? place,
+        double? latitude,
+        double? longitude,
+        string? date,
+        string? timeZone,
+        string invocationId,
+        CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.StartNew();
         try
         {
             double lat;
@@ -72,7 +92,7 @@ public sealed class GetSunriseSunsetTool
             {
                 try
                 {
-                    var resolved = await _locations.ResolveAsync(place, invocationId, functionContext.CancellationToken)
+                    var resolved = await _locations.ResolveAsync(place, invocationId, cancellationToken)
                         .ConfigureAwait(false);
                     lat = resolved.Latitude;
                     lon = resolved.Longitude;
@@ -136,7 +156,7 @@ public sealed class GetSunriseSunsetTool
                 resolvedDate,
                 string.IsNullOrWhiteSpace(timeZone) ? null : timeZone.Trim(),
                 invocationId,
-                functionContext.CancellationToken).ConfigureAwait(false);
+                cancellationToken).ConfigureAwait(false);
 
             object? payload = null;
             if (!string.IsNullOrWhiteSpace(result.Body))
