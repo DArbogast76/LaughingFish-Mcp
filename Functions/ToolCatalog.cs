@@ -82,6 +82,18 @@ public static class ToolCatalog
             "no_station_within_range is a successful empty result.",
             ["missing_location", "invalid_coordinates", "invalid_nearest", "invalid_days", "invalid_max_distance"],
             "/api/v1/tools/get-water-temperature?latitude=38.9784&longitude=-76.4922&days=7"),
+        Conditions("get_charted_hazards", "getChartedHazards", ChartedHazardsHttp.Route,
+            "Returns charted wrecks and obstructions inside a radius of a latitude and longitude. Both coordinates are required. radiusMiles is an integer from 1 to 50 and defaults to 2. It is the search radius, not the size of a wreck. limit is 1 to 100 and defaults to 25. Hazards are nearest first. kind is wreck or obstruction. distanceMiles and distanceMeters are from the requested point to the charted point. leastDepthMeters is the charted sounding. leastDepthFeet is that depth in feet. waterLevel says whether the chart shows the point covered or exposed. wreckCategory is the charted type, such as dangerous wreck, foul ground, crib, fish haven, or wellhead. chartCell is not useful in an answer.",
+            [
+                Input("latitude", true, "number", "-90 to 90.", ["lat"]),
+                Input("longitude", true, "number", "-180 to 180.", ["lon"]),
+                Input("radiusMiles", false, "integer", "1 to 50. Default 2. Search radius, not a wreck size."),
+                Input("limit", false, "integer", "1 to 100. Default 25. Nearest are kept.")
+            ],
+            "ok true and the charted hazards nearest the point. truncated true means farther points inside the radius were left out.",
+            "An empty hazards list means no charted wreck or obstruction point was found in range. An empty list is not a failed call.",
+            ["invalid_request", "charted_hazards_unavailable", "charted_hazards_invalid_body"],
+            "/api/v1/tools/get-charted-hazards?latitude=38.9784&longitude=-76.4922&radiusMiles=2"),
         Conditions("get_lunar_cycle", "getLunarCycle", LunarCycleHttp.Route,
             "Returns the lunar almanac for a local date range. Latitude and longitude are required. Pass date, or startDate and endDate. Omit the date for today. The range is inclusive and at most 31 days. Do not send a time zone. This is not a tide prediction.",
             [
