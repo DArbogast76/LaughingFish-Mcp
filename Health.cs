@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using LaughingFish.Mcp.Clients;
+using LaughingFish.Mcp.Functions;
 using LaughingFish.Mcp.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -90,21 +91,12 @@ public sealed class Health
             mcp = new
             {
                 serverName = "LaughingFish-Mcp",
-                serverVersion = "0.4.20",
+                serverVersion = "0.4.18",
                 transport = "streamable-http",
                 endpoint = "/runtime/webhooks/mcp"
             },
-            toolHttp = new
-            {
-                listSpecies = "/api/v1/tools/list-species",
-                listGuideTopics = "/api/v1/tools/list-guide-topics",
-                searchSpeciesGuides = "/api/v1/tools/search-species-guides",
-                getChapter = "/api/v1/tools/get-chapter",
-                getLunarCycle = "/api/v1/tools/get-lunar-cycle",
-                getTidePredictions = "/api/v1/tools/get-tide-predictions",
-                getSeaConditions = "/api/v1/tools/get-sea-conditions",
-                getChartedHazards = "/api/v1/tools/get-charted-hazards"
-            },
+            catalog = ToolCatalog.Path,
+            toolHttp = ToolCatalog.PathMap(),
             settings = new
             {
                 redisHostBound = _options.RedisHostBound,
@@ -131,8 +123,6 @@ public sealed class Health
                 uvApiAudienceBound = _options.UvApiAudienceBound,
                 weatherAlertsApiBound = _options.WeatherAlertsApiBound,
                 weatherAlertsApiAudienceBound = _options.WeatherAlertsApiAudienceBound,
-                wrecksApiBound = _options.WrecksApiBound,
-                wrecksApiAudienceBound = _options.WrecksApiAudienceBound,
                 pinRecentHours = _options.PinRecentHours,
                 weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
                 waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
@@ -144,7 +134,6 @@ public sealed class Health
                 seaConditionsCacheTtlSeconds = (int)_options.SeaConditionsCacheTtl.TotalSeconds,
                 uvCacheTtlSeconds = (int)_options.UvCacheTtl.TotalSeconds,
                 weatherAlertsCacheTtlSeconds = (int)_options.WeatherAlertsCacheTtl.TotalSeconds,
-                wrecksCacheTtlSeconds = (int)_options.WrecksCacheTtl.TotalSeconds,
                 cacheDefaultTtlSeconds = (int)_options.DefaultCacheTtl.TotalSeconds
             }
         };
