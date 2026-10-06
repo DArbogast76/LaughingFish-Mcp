@@ -48,6 +48,7 @@ builder.Services.AddHttpClient<ITideApiClient, TideApiClient>();
 builder.Services.AddHttpClient<ISeaConditionsApiClient, SeaConditionsApiClient>();
 builder.Services.AddHttpClient<IUvApiClient, UvApiClient>();
 builder.Services.AddHttpClient<IWeatherAlertsApiClient, WeatherAlertsApiClient>();
+builder.Services.AddHttpClient<ISwimRiskApiClient, SwimRiskApiClient>();
 builder.Services.AddSingleton<ISpeciesGuideToolService, SpeciesGuideToolService>();
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetSunriseSunsetTool>();
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetWeatherForecastTool>();
@@ -57,6 +58,7 @@ builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetTidePredictionsTool>
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetSeaConditionsTool>();
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetUvIndexTool>();
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetWeatherAlertsTool>();
+builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetSwimRiskTool>();
 builder.Services.AddHttpClient<ILocationResolver, AzureMapsLocationResolver>();
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>

@@ -30,8 +30,8 @@ public sealed class McpOptions
     public string UvApiAudience { get; set; } = string.Empty;
     public string WeatherAlertsApiBaseUrl { get; set; } = string.Empty;
     public string WeatherAlertsApiAudience { get; set; } = string.Empty;
-    public string WrecksApiBaseUrl { get; set; } = string.Empty;
-    public string WrecksApiAudience { get; set; } = string.Empty;
+    public string SwimRiskApiBaseUrl { get; set; } = string.Empty;
+    public string SwimRiskApiAudience { get; set; } = string.Empty;
     public int PinRecentHours { get; set; } = 48;
     public int CacheDefaultTtlSeconds { get; set; } = 3600;
     public int WeatherCacheTtlSeconds { get; set; } = 3600;
@@ -44,7 +44,7 @@ public sealed class McpOptions
     public int SeaConditionsCacheTtlSeconds { get; set; } = 3600;
     public int UvCacheTtlSeconds { get; set; } = 3600;
     public int WeatherAlertsCacheTtlSeconds { get; set; } = 300;
-    public int WrecksCacheTtlSeconds { get; set; } = 604800;
+    public int SwimRiskCacheTtlSeconds { get; set; } = 3600;
 
     public bool RedisHostBound => !string.IsNullOrWhiteSpace(RedisHost);
     public bool RedisUserBound => !string.IsNullOrWhiteSpace(RedisUser);
@@ -69,8 +69,8 @@ public sealed class McpOptions
     public bool UvApiAudienceBound => !string.IsNullOrWhiteSpace(UvApiAudience);
     public bool WeatherAlertsApiBound => !string.IsNullOrWhiteSpace(WeatherAlertsApiBaseUrl);
     public bool WeatherAlertsApiAudienceBound => !string.IsNullOrWhiteSpace(WeatherAlertsApiAudience);
-    public bool WrecksApiBound => !string.IsNullOrWhiteSpace(WrecksApiBaseUrl);
-    public bool WrecksApiAudienceBound => !string.IsNullOrWhiteSpace(WrecksApiAudience);
+    public bool SwimRiskApiBound => !string.IsNullOrWhiteSpace(SwimRiskApiBaseUrl);
+    public bool SwimRiskApiAudienceBound => !string.IsNullOrWhiteSpace(SwimRiskApiAudience);
 
     public TimeSpan WeatherCacheTtl => Ttl(WeatherCacheTtlSeconds, 3600);
     public TimeSpan WaterTempCacheTtl => Ttl(WaterTempCacheTtlSeconds, 3600);
@@ -82,7 +82,7 @@ public sealed class McpOptions
     public TimeSpan SeaConditionsCacheTtl => Ttl(SeaConditionsCacheTtlSeconds, 3600);
     public TimeSpan UvCacheTtl => Ttl(UvCacheTtlSeconds, 3600);
     public TimeSpan WeatherAlertsCacheTtl => Ttl(WeatherAlertsCacheTtlSeconds, 300);
-    public TimeSpan WrecksCacheTtl => Ttl(WrecksCacheTtlSeconds, 604800);
+    public TimeSpan SwimRiskCacheTtl => Ttl(SwimRiskCacheTtlSeconds, 3600);
     public TimeSpan DefaultCacheTtl => Ttl(CacheDefaultTtlSeconds, 3600);
 
     private static TimeSpan Ttl(int seconds, int fallback) =>

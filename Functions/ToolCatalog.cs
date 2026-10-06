@@ -152,7 +152,17 @@ public static class ToolCatalog
             "ok true and the active Actual alerts for that point, sorted by severity then expires.",
             "An empty alerts array means no active alert contains that point, including points outside National Weather Service coverage. An empty array is not a failed call.",
             ["invalid_request", "weather_alerts_invalid_body"],
-            "/v1/tools/get-weather-alerts?latitude=30.4213&longitude=-87.2169")
+            "/v1/tools/get-weather-alerts?latitude=30.4213&longitude=-87.2169"),
+        Conditions("get_swim_risk", "getSwimRisk", SwimRiskHttp.Route,
+            "Returns the issued National Weather Service surf-zone rip current risk for forecast zones intersecting a latitude and longitude. Issued forecast, not a measured observation and not a rating for one beach. Latitude and longitude are both required. There is no place name, date, or radius. Search uses 10 miles, then 25 miles only when the smaller search has no rated zone. Day 1 is 1200 UTC today through 1200 UTC tomorrow. Day 2 is the next 1200 UTC window. rip is Low, Moderate, or High. beachname is the zone, and the rating covers that whole zone. Product date and time are office text as issued, not UTC.",
+            [
+                Input("latitude", true, "number", "-90 to 90.", ["lat"]),
+                Input("longitude", true, "number", "-180 to 180.", ["lon"])
+            ],
+            "ok true and the rated forecast zones intersecting that point, with Day 1 and Day 2 when issued.",
+            "no_forecast_within_range means no rated zone within 25 miles. An empty locations array is not a failed call and not a statement that the water is safe.",
+            ["invalid_request", "swim_risk_invalid_body", "swim_risk_unbound"],
+            "/v1/tools/get-swim-risk?latitude=36.85&longitude=-75.98")
     ];
 
     public static IReadOnlyList<ToolCatalogGap> NotOnHttp { get; } =

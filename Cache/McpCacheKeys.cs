@@ -75,6 +75,9 @@ public static class McpCacheKeys
     public static string WeatherAlerts(double latitude, double longitude) =>
         Format("alerts", "expl1", Coord(latitude), Coord(longitude));
 
+    public static string SwimRisk(double latitude, double longitude) =>
+        Format("swim", "expl1", Coord2(latitude), Coord2(longitude));
+
     public static string SpeciesGuideCatalog() => Format("sg", "species");
 
     public static string SpeciesGuideTopics() => Format("sg", "topics");
@@ -101,6 +104,9 @@ public static class McpCacheKeys
 
     private static string Coord(double value) =>
         Math.Round(value, 4, MidpointRounding.AwayFromZero).ToString("0.0000", CultureInfo.InvariantCulture);
+
+    private static string Coord2(double value) =>
+        Math.Round(value, 2, MidpointRounding.AwayFromZero).ToString("0.00", CultureInfo.InvariantCulture);
 
     private static string Token(string? value)
     {

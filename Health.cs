@@ -91,7 +91,7 @@ public sealed class Health
             mcp = new
             {
                 serverName = "LaughingFish-Mcp",
-                serverVersion = "0.4.21",
+                serverVersion = "0.4.22",
                 transport = "streamable-http",
                 endpoint = "/runtime/webhooks/mcp"
             },
@@ -123,6 +123,8 @@ public sealed class Health
                 uvApiAudienceBound = _options.UvApiAudienceBound,
                 weatherAlertsApiBound = _options.WeatherAlertsApiBound,
                 weatherAlertsApiAudienceBound = _options.WeatherAlertsApiAudienceBound,
+                swimRiskApiBound = _options.SwimRiskApiBound,
+                swimRiskApiAudienceBound = _options.SwimRiskApiAudienceBound,
                 pinRecentHours = _options.PinRecentHours,
                 weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
                 waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
@@ -134,6 +136,7 @@ public sealed class Health
                 seaConditionsCacheTtlSeconds = (int)_options.SeaConditionsCacheTtl.TotalSeconds,
                 uvCacheTtlSeconds = (int)_options.UvCacheTtl.TotalSeconds,
                 weatherAlertsCacheTtlSeconds = (int)_options.WeatherAlertsCacheTtl.TotalSeconds,
+                swimRiskCacheTtlSeconds = (int)_options.SwimRiskCacheTtl.TotalSeconds,
                 cacheDefaultTtlSeconds = (int)_options.DefaultCacheTtl.TotalSeconds
             }
         };
