@@ -125,6 +125,8 @@ public sealed class Health
                 weatherAlertsApiAudienceBound = _options.WeatherAlertsApiAudienceBound,
                 swimRiskApiBound = _options.SwimRiskApiBound,
                 swimRiskApiAudienceBound = _options.SwimRiskApiAudienceBound,
+                wrecksApiBound = _options.WrecksApiBound,
+                wrecksApiAudienceBound = _options.WrecksApiAudienceBound,
                 pinRecentHours = _options.PinRecentHours,
                 weatherCacheTtlSeconds = (int)_options.WeatherCacheTtl.TotalSeconds,
                 waterTempCacheTtlSeconds = (int)_options.WaterTempCacheTtl.TotalSeconds,
@@ -137,6 +139,7 @@ public sealed class Health
                 uvCacheTtlSeconds = (int)_options.UvCacheTtl.TotalSeconds,
                 weatherAlertsCacheTtlSeconds = (int)_options.WeatherAlertsCacheTtl.TotalSeconds,
                 swimRiskCacheTtlSeconds = (int)_options.SwimRiskCacheTtl.TotalSeconds,
+                wrecksCacheTtlSeconds = (int)_options.WrecksCacheTtl.TotalSeconds,
                 cacheDefaultTtlSeconds = (int)_options.DefaultCacheTtl.TotalSeconds
             }
         };
