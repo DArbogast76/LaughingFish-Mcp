@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using ModelContextProtocol.Protocol;
 using LaughingFish.Mcp.Clients;
 using LaughingFish.Mcp.Configuration;
 using LaughingFish.Mcp.Location;
@@ -50,13 +51,14 @@ public sealed class GetWaterTemperatureTool
         [McpToolProperty("nearest", "How many in-range stations to return. Allowed: 1, 3, 5. Default 1.", false)] int? nearest,
         [McpToolProperty("days", "History lookback in days for trend. Allowed: 1, 3, 7, 30, 90. Default 1. Not a forecast.", false)] int? days,
         [McpToolProperty("maxDistanceMiles", "Maximum station distance in miles. Allowed: 10, 25, 50. Default 25.", false)] int? maxDistanceMiles,
+        [McpToolProperty("includeChart", "Optional. True to include the nearest station PNG chart for the same days window. Default false. The model decides.", false)] bool? includeChart,
         FunctionContext functionContext)
     {
         var started = Stopwatch.StartNew();
         var invocationId = functionContext.InvocationId;
 
         _logger.LogInformation(
-            "GetWaterTemperature tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles}",
+            "GetWaterTemperature tool started. InvocationId={InvocationId} Tool={Tool} SessionId={SessionId} Place={Place} Lat={Lat} Lon={Lon} Nearest={Nearest} Days={Days} MaxDistanceMiles={MaxDistanceMiles} IncludeChart={IncludeChart}",
             invocationId,
             context.Name,
             context.SessionId,
@@ -65,7 +67,8 @@ public sealed class GetWaterTemperatureTool
             longitude,
             nearest,
             days,
-            maxDistanceMiles);
+            maxDistanceMiles,
+            includeChart);
 
         return await ExecuteAsync(
             place,
@@ -74,6 +77,7 @@ public sealed class GetWaterTemperatureTool
             nearest,
             days,
             maxDistanceMiles,
+            includeChart == true,
             invocationId,
             functionContext.CancellationToken).ConfigureAwait(false);
     }
@@ -85,6 +89,7 @@ public sealed class GetWaterTemperatureTool
         int? nearest,
         int? days,
         int? maxDistanceMiles,
+        bool includeChart,
         string invocationId,
         CancellationToken cancellationToken)
     {
@@ -159,6 +164,7 @@ public sealed class GetWaterTemperatureTool
                 resolvedNearest,
                 resolvedDays,
                 resolvedMiles,
+                includeChart,
                 invocationId,
                 cancellationToken).ConfigureAwait(false);
 
@@ -198,7 +204,7 @@ public sealed class GetWaterTemperatureTool
                 };
             }
 
-            return new
+            var textPayload = new
             {
                 ok = true,
                 invocationId,
@@ -206,6 +212,27 @@ public sealed class GetWaterTemperatureTool
                 statusCode = result.StatusCode,
                 location = locationPayload ?? new { latitude = lat, longitude = lon },
                 result = payload
+            };
+
+            if (result.ChartPng is not { Length: > 0 } png)
+            {
+                return textPayload;
+            }
+
+            _logger.LogInformation(
+                "GetWaterTemperature tool returning chart. InvocationId={InvocationId} Bytes={Bytes} ElapsedMs={ElapsedMs}",
+                invocationId,
+                png.Length,
+                started.ElapsedMilliseconds);
+
+            return new List<ContentBlock>
+            {
+                new TextContentBlock { Text = JsonSerializer.Serialize(textPayload) },
+                new ImageContentBlock
+                {
+                    Data = Convert.ToBase64String(png),
+                    MimeType = "image/png"
+                }
             };
         }
         catch (Exception ex)

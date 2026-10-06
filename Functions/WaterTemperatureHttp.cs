@@ -59,6 +59,7 @@ public sealed class WaterTemperatureHttp
                 nearest,
                 days,
                 maxDistanceMiles,
+                false,
                 invocationId,
                 context.CancellationToken).ConfigureAwait(false);
             _logger.LogInformation(
