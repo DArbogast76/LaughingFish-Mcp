@@ -123,16 +123,14 @@ public static class ToolCatalog
             ["missing_location", "invalid_coordinates", "invalid_nearest", "invalid_days", "invalid_max_distance"],
             "/api/v1/tools/get-sea-conditions?latitude=36.8529&longitude=-75.9780&nearest=3&days=1"),
         Conditions("get_uv_index", "getUvIndex", UvIndexHttp.Route,
-            "Returns the current EPA UV Index issuance for a five-digit US ZIP. Hourly values and the daily index are the issuance published now. No date is accepted and no later day is available. Latitude, longitude, and zip are required. zip is used as given.",
+            "Returns the current EPA UV Index issuance for a five-digit US ZIP. Hourly values and the daily index are the issuance published now. No date is accepted and no later day is available. zip is required. A point is not accepted.",
             [
-                Input("latitude", true, "number", "-90 to 90.", ["lat"]),
-                Input("longitude", true, "number", "-180 to 180.", ["lon"]),
                 Input("zip", true, "string", "Five-digit US ZIP. ZIP+4 keeps the first five digits.")
             ],
             "ok true and the current EPA issuance, including the outdoor scale.",
             "An issuance with no forecast is a structured error, not an invented index.",
-            ["missing_location", "invalid_coordinates", "invalid_zip", "uv_unbound", "uv_invalid_body"],
-            "/api/v1/tools/get-uv-index?latitude=38.9784&longitude=-76.4922&zip=21401"),
+            ["invalid_zip", "uv_unbound", "uv_invalid_body"],
+            "/api/v1/tools/get-uv-index?zip=21401"),
         Conditions("get_weather_alerts", "getWeatherAlerts", WeatherAlertsHttp.Route,
             "Returns National Weather Service watches, warnings, and advisories active at the moment of the call. Snapshot, not a forecast and not a history. Latitude and longitude are both required. Each alert includes event, severity, urgency, certainty, response, headline, description, instruction, area description, effective, expires, and ends. expires is when the message expires. ends is when the hazard ends, when it was sent. Relay instruction when present. When instruction is empty, relay description. Do not invent safety guidance.",
             [

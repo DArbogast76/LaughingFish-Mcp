@@ -3,7 +3,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using LaughingFish.Mcp.Clients;
 using LaughingFish.Mcp.Configuration;
-using LaughingFish.Mcp.Location;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Mcp;
 using Microsoft.Extensions.Logging;
@@ -12,14 +11,13 @@ using Microsoft.Extensions.Options;
 namespace LaughingFish.Mcp.Functions;
 
 /// <summary>
-/// Current EPA UV Index for a US ZIP. Latitude and longitude are required
-/// and are not sent to EPA. This tool does not call Azure Maps.
+/// Current EPA UV Index for a US ZIP. Does not accept a point and does not call Azure Maps.
 /// </summary>
 public sealed class GetUvIndexTool
 {
     public const string ToolName = "get_uv_index";
     public const string ToolDescription =
-        "Current EPA UV Index forecast for a five-digit US ZIP. Hourly values and the daily index are the issuance EPA is publishing now. No date can be requested and no later days are available. Latitude, longitude, and zip are required. zip is used as given. Does not invent an index when EPA has no forecast.";
+        "Current EPA UV Index forecast for a five-digit US ZIP. Hourly values and the daily index are the issuance EPA is publishing now. No date can be requested and no later days are available. zip is required. A point is not accepted. Does not invent an index when EPA has no forecast.";
 
     private readonly ILogger<GetUvIndexTool> _logger;
     private readonly IUvApiClient _client;
@@ -38,24 +36,20 @@ public sealed class GetUvIndexTool
     [Function(nameof(GetUvIndexTool))]
     public async Task<JsonObject> Run(
         [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
-        [McpToolProperty("latitude", "Latitude in decimal degrees, from -90 to 90.", true)] double? latitude,
-        [McpToolProperty("longitude", "Longitude in decimal degrees, from -180 to 180.", true)] double? longitude,
         [McpToolProperty("zip", "Five-digit US ZIP. Used as-is. ZIP+4 keeps the first five digits.", true)] string? zip,
         FunctionContext functionContext)
     {
         var started = Stopwatch.StartNew();
         var invocationId = functionContext.InvocationId;
         _logger.LogInformation(
-            "GetUvIndex tool started. InvocationId={InvocationId} Tool={Tool} Lat={Lat} Lon={Lon} Zip={Zip}",
+            "GetUvIndex tool started. InvocationId={InvocationId} Tool={Tool} Zip={Zip}",
             invocationId,
             context.Name,
-            latitude,
-            longitude,
             zip);
 
         try
         {
-            var result = await ExecuteAsync(latitude, longitude, zip, invocationId, functionContext.CancellationToken)
+            var result = await ExecuteAsync(zip, invocationId, functionContext.CancellationToken)
                 .ConfigureAwait(false);
             _logger.LogInformation(
                 "GetUvIndex tool finished. InvocationId={InvocationId} Ok={Ok} ElapsedMs={ElapsedMs}",
@@ -76,17 +70,10 @@ public sealed class GetUvIndexTool
     }
 
     internal async Task<JsonObject> ExecuteAsync(
-        double? latitude,
-        double? longitude,
         string? zip,
         string invocationId,
         CancellationToken cancellationToken)
     {
-        if (!CoordinateInput.TryRead(latitude, longitude, out var lat, out var lon, out var locationError, out var locationMessage))
-        {
-            return Error(locationError, locationMessage, invocationId);
-        }
-
         var resolvedZip = NormalizeZip(zip);
         if (resolvedZip is null)
         {
@@ -99,8 +86,6 @@ public sealed class GetUvIndexTool
 
         JsonNode location = new JsonObject
         {
-            ["latitude"] = lat,
-            ["longitude"] = lon,
             ["postalCode"] = resolvedZip
         };
 
