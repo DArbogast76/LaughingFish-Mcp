@@ -13,7 +13,7 @@ namespace LaughingFish.Mcp;
 
 /// <summary>
 /// Deployment smoke test. Does not call Redis, Maps, or downstream APIs.
-/// GET /api/health
+/// GET /health
 /// </summary>
 public sealed class Health
 {

@@ -3,6 +3,9 @@
   "telemetryMode": "OpenTelemetry",
   "functionTimeout": "00:02:00",
   "extensions": {
+    "http": {
+      "routePrefix": ""
+    },
     "mcp": {
       "serverName": "LaughingFish-Mcp",
       "serverVersion": "0.4.21",

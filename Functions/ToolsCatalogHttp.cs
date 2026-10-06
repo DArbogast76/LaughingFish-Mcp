@@ -8,7 +8,7 @@ namespace LaughingFish.Mcp.Functions;
 
 /// <summary>
 /// Read-only catalog of HTTP tool routes. Does not call Redis, Maps, or a downstream API.
-/// GET /api/v1/tools
+/// GET /v1/tools
 /// </summary>
 public sealed class ToolsCatalogHttp
 {
