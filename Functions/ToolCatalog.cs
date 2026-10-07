@@ -162,7 +162,17 @@ public static class ToolCatalog
             "ok true and the rated forecast zones intersecting that point, with Day 1 and Day 2 when issued.",
             "no_forecast_within_range means no rated zone within 25 miles. An empty locations array is not a failed call and not a statement that the water is safe.",
             ["invalid_request", "swim_risk_invalid_body", "swim_risk_unbound"],
-            "/v1/tools/get-swim-risk?latitude=36.85&longitude=-75.98")
+            "/v1/tools/get-swim-risk?latitude=36.85&longitude=-75.98"),
+        Conditions("get_tides", "getTides", TideNowHttp.Route,
+            "Latest measured water-surface height at the nearest CO-OPS gauge within 100 miles. Latitude and longitude are both required. There is no place name, date, or station id. heightFeet and heightMeters are the newest sample above the datum. MLLW is the coastal and tidal-river chart zero. LWD is the Great Lakes chart zero. coverage level_and_direction means direction is the change from the prior sample. coverage current_level_only means only one sample was returned, so direction is null. A null direction is not steady.",
+            [
+                Input("latitude", true, "number", "-90 to 90.", ["lat"]),
+                Input("longitude", true, "number", "-180 to 180.", ["lon"])
+            ],
+            "ok true and the nearest gauge sample, or a null observation when no gauge in range returned a sample.",
+            "no_station_within_range means no gauge within 100 miles returned a recent sample. That is a successful result, not a failed call, and it does not mean the water is flat.",
+            ["invalid_request", "tide_now_invalid_body", "tide_now_unbound"],
+            "/v1/tools/get-tides?latitude=38.9784&longitude=-76.4922")
     ];
 
     public static IReadOnlyList<ToolCatalogGap> NotOnHttp { get; } =
