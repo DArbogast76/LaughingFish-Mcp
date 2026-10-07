@@ -78,6 +78,9 @@ public static class McpCacheKeys
     public static string SwimRisk(double latitude, double longitude) =>
         Format("swim", "expl1", Coord2(latitude), Coord2(longitude));
 
+    public static string SurfForecast(double latitude, double longitude) =>
+        Format("surf", "expl1", Coord2(latitude), Coord2(longitude));
+
     public static string TideNow(double latitude, double longitude) =>
         Format("tidenow", "expl1", Coord(latitude), Coord(longitude));
 

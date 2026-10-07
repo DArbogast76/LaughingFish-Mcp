@@ -50,6 +50,7 @@ builder.Services.AddHttpClient<IUvApiClient, UvApiClient>();
 builder.Services.AddHttpClient<IWeatherAlertsApiClient, WeatherAlertsApiClient>();
 builder.Services.AddHttpClient<IChartedHazardsApiClient, ChartedHazardsApiClient>();
 builder.Services.AddHttpClient<ISwimRiskApiClient, SwimRiskApiClient>();
+builder.Services.AddHttpClient<ISurfForecastApiClient, SurfForecastApiClient>();
 builder.Services.AddHttpClient<ITideNowApiClient, TideNowApiClient>();
 builder.Services.AddSingleton<ISpeciesGuideToolService, SpeciesGuideToolService>();
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetSunriseSunsetTool>();
@@ -62,6 +63,7 @@ builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetUvIndexTool>();
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetWeatherAlertsTool>();
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetChartedHazardsTool>();
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetSwimRiskTool>();
+builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetSurfForecastTool>();
 builder.Services.AddTransient<LaughingFish.Mcp.Functions.GetTideNowTool>();
 builder.Services.AddHttpClient<ILocationResolver, AzureMapsLocationResolver>();
 

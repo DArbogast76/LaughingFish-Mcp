@@ -163,6 +163,16 @@ public static class ToolCatalog
             "no_forecast_within_range means no rated zone within 25 miles. An empty locations array is not a failed call and not a statement that the water is safe.",
             ["invalid_request", "swim_risk_invalid_body", "swim_risk_unbound"],
             "/v1/tools/get-swim-risk?latitude=36.85&longitude=-75.98"),
+        Conditions("get_surf_forecast", "getSurfForecast", SurfForecastHttp.Route,
+            "Returns the issued National Weather Service breaking-surf height for forecast zones intersecting a latitude and longitude. A two-day surf-zone forecast, not a measured wave height and not offshore seas. Latitude and longitude are both required. There is no place name, date, or radius. Search uses 10 miles, then 25 miles only when the smaller search has no issued surf text. Day 1 is 1200 UTC today through 1200 UTC tomorrow. Day 2 is the next 1200 UTC window. text is the height as issued. minFeet and maxFeet are set only for one height or one simple range. beachname is the zone, and the height covers that whole zone. period is the office forecast label, not a swell period.",
+            [
+                Input("latitude", true, "number", "-90 to 90.", ["lat"]),
+                Input("longitude", true, "number", "-180 to 180.", ["lon"])
+            ],
+            "ok true and the issued surf forecast zones intersecting that point, with Day 1 and Day 2 when issued.",
+            "no_forecast_within_range means no issued surf text within 25 miles. An empty locations array is not a failed call and not a statement that the water is calm.",
+            ["invalid_request", "surf_forecast_invalid_body", "surf_forecast_unbound"],
+            "/v1/tools/get-surf-forecast?latitude=36.85&longitude=-75.98"),
         Conditions("get_tides", "getTides", TideNowHttp.Route,
             "Latest measured water-surface height at the nearest CO-OPS gauge within 100 miles. Latitude and longitude are both required. There is no place name, date, or station id. heightFeet and heightMeters are the newest sample above the datum. MLLW is the coastal and tidal-river chart zero. LWD is the Great Lakes chart zero. coverage level_and_direction means direction is the change from the prior sample. coverage current_level_only means only one sample was returned, so direction is null. A null direction is not steady.",
             [

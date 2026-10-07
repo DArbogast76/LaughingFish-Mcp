@@ -42,7 +42,7 @@ public sealed class ToolsCatalogHttp
                 ok = true,
                 schema = ToolCatalog.Schema,
                 invocationId,
-                catalogVersion = "5",
+                catalogVersion = "6",
                 path = ToolCatalog.Path,
                 toolCount = tools.Length,
                 calling = new
@@ -50,7 +50,7 @@ public sealed class ToolsCatalogHttp
                     methods = new[] { "GET", "POST" },
                     auth = "anonymous",
                     query = "Query parameters are strings. A POST JSON object wins when the same key is on the query string. Invalid JSON is ignored and the query stands.",
-                    conditionTools = "get_sunrise_sunset, get_weather_forecast, get_water_temperature, get_lunar_cycle, get_tide_predictions, get_tides, get_sea_conditions, get_uv_index, get_weather_alerts, get_swim_risk, and get_charted_hazards return HTTP 200. A tool failure is HTTP 200 with ok false, error, and message. It is not an empty success.",
+                    conditionTools = "get_sunrise_sunset, get_weather_forecast, get_water_temperature, get_lunar_cycle, get_tide_predictions, get_tides, get_sea_conditions, get_uv_index, get_weather_alerts, get_swim_risk, get_surf_forecast, and get_charted_hazards return HTTP 200. A tool failure is HTTP 200 with ok false, error, and message. It is not an empty success.",
                     speciesGuideTools = "list_species, list_guide_topics, search_species_guides, and get_chapter return the tool result status. Success is 200. A bad request is 400. A missing chapter or species is 404. A downstream failure is 502.",
                     hostFailure = "A thrown host failure is HTTP 500 with ok false."
                 },

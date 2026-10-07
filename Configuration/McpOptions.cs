@@ -32,6 +32,8 @@ public sealed class McpOptions
     public string WeatherAlertsApiAudience { get; set; } = string.Empty;
     public string SwimRiskApiBaseUrl { get; set; } = string.Empty;
     public string SwimRiskApiAudience { get; set; } = string.Empty;
+    public string SurfForecastApiBaseUrl { get; set; } = string.Empty;
+    public string SurfForecastApiAudience { get; set; } = string.Empty;
     public string TideNowApiBaseUrl { get; set; } = string.Empty;
     public string TideNowApiAudience { get; set; } = string.Empty;
     public string WrecksApiBaseUrl { get; set; } = string.Empty;
@@ -49,6 +51,7 @@ public sealed class McpOptions
     public int UvCacheTtlSeconds { get; set; } = 3600;
     public int WeatherAlertsCacheTtlSeconds { get; set; } = 300;
     public int SwimRiskCacheTtlSeconds { get; set; } = 3600;
+    public int SurfForecastCacheTtlSeconds { get; set; } = 3600;
     public int TideNowCacheTtlSeconds { get; set; } = 300;
     public int WrecksCacheTtlSeconds { get; set; } = 604800;
 
@@ -77,6 +80,8 @@ public sealed class McpOptions
     public bool WeatherAlertsApiAudienceBound => !string.IsNullOrWhiteSpace(WeatherAlertsApiAudience);
     public bool SwimRiskApiBound => !string.IsNullOrWhiteSpace(SwimRiskApiBaseUrl);
     public bool SwimRiskApiAudienceBound => !string.IsNullOrWhiteSpace(SwimRiskApiAudience);
+    public bool SurfForecastApiBound => !string.IsNullOrWhiteSpace(SurfForecastApiBaseUrl);
+    public bool SurfForecastApiAudienceBound => !string.IsNullOrWhiteSpace(SurfForecastApiAudience);
     public bool TideNowApiBound => !string.IsNullOrWhiteSpace(TideNowApiBaseUrl);
     public bool TideNowApiAudienceBound => !string.IsNullOrWhiteSpace(TideNowApiAudience);
     public bool WrecksApiBound => !string.IsNullOrWhiteSpace(WrecksApiBaseUrl);
@@ -93,6 +98,7 @@ public sealed class McpOptions
     public TimeSpan UvCacheTtl => Ttl(UvCacheTtlSeconds, 3600);
     public TimeSpan WeatherAlertsCacheTtl => Ttl(WeatherAlertsCacheTtlSeconds, 300);
     public TimeSpan SwimRiskCacheTtl => Ttl(SwimRiskCacheTtlSeconds, 3600);
+    public TimeSpan SurfForecastCacheTtl => Ttl(SurfForecastCacheTtlSeconds, 3600);
     public TimeSpan TideNowCacheTtl => Ttl(TideNowCacheTtlSeconds, 300);
     public TimeSpan WrecksCacheTtl => Ttl(WrecksCacheTtlSeconds, 604800);
     public TimeSpan DefaultCacheTtl => Ttl(CacheDefaultTtlSeconds, 3600);

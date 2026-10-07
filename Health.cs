@@ -91,7 +91,7 @@ public sealed class Health
             mcp = new
             {
                 serverName = "LaughingFish-Mcp",
-                serverVersion = "0.4.23",
+                serverVersion = "0.4.24",
                 transport = "streamable-http",
                 endpoint = "/runtime/webhooks/mcp"
             },
@@ -125,6 +125,8 @@ public sealed class Health
                 weatherAlertsApiAudienceBound = _options.WeatherAlertsApiAudienceBound,
                 swimRiskApiBound = _options.SwimRiskApiBound,
                 swimRiskApiAudienceBound = _options.SwimRiskApiAudienceBound,
+                surfForecastApiBound = _options.SurfForecastApiBound,
+                surfForecastApiAudienceBound = _options.SurfForecastApiAudienceBound,
                 tideNowApiBound = _options.TideNowApiBound,
                 tideNowApiAudienceBound = _options.TideNowApiAudienceBound,
                 wrecksApiBound = _options.WrecksApiBound,
@@ -141,6 +143,7 @@ public sealed class Health
                 uvCacheTtlSeconds = (int)_options.UvCacheTtl.TotalSeconds,
                 weatherAlertsCacheTtlSeconds = (int)_options.WeatherAlertsCacheTtl.TotalSeconds,
                 swimRiskCacheTtlSeconds = (int)_options.SwimRiskCacheTtl.TotalSeconds,
+                surfForecastCacheTtlSeconds = (int)_options.SurfForecastCacheTtl.TotalSeconds,
                 tideNowCacheTtlSeconds = (int)_options.TideNowCacheTtl.TotalSeconds,
                 wrecksCacheTtlSeconds = (int)_options.WrecksCacheTtl.TotalSeconds,
                 cacheDefaultTtlSeconds = (int)_options.DefaultCacheTtl.TotalSeconds
