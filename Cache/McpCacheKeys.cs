@@ -79,7 +79,7 @@ public static class McpCacheKeys
         Format("swim", "expl1", Coord2(latitude), Coord2(longitude));
 
     public static string SurfForecast(double latitude, double longitude) =>
-        Format("surf", "expl1", Coord2(latitude), Coord2(longitude));
+        Format("surf", "expl2", Coord2(latitude), Coord2(longitude));
 
     public static string TideNow(double latitude, double longitude) =>
         Format("tidenow", "expl1", Coord(latitude), Coord(longitude));

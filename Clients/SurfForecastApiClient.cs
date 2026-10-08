@@ -15,7 +15,7 @@ namespace LaughingFish.Mcp.Clients;
 public sealed class SurfForecastApiClient : ISurfForecastApiClient
 {
     public const string Path = "/api/v1/surf-forecast";
-    public const string Schema = "laughingfish.surfForecast.v1";
+    public const string Schema = "laughingfish.surfForecast.v2";
 
     private readonly HttpClient _http;
     private readonly McpOptions _options;
