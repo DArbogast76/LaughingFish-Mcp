@@ -16,7 +16,7 @@ public sealed class GetRiverStageTool
 {
     public const string ToolName = "get_river_stage";
     public const string ToolDescription =
-        "Observed river stage and discharge at the nearest live gauge on the same river, plus the next live gauges upstream on that mainstem. Latitude and longitude are required. Do not pass a place name, a date, or a site id. gauge is the nearest gauge with a reading in the last 48 hours. distanceMiles is from the requested point to that gauge. gaugeHeight is feet and meters above the gauge datum. discharge is cubic feet per second and cubic meters per second. direction is rising, falling, or steady from the recent window: 0.05 feet for stage, 5 percent for discharge. A null direction means the window had one sample. It does not mean steady. upstreamMainstem holds the next gauges on the same river that also have a reading in the last 48 hours, nearest first, usually two, or fewer if the reach runs out. Silent gauges are skipped and are not rows. outlook is rising_upstream, falling_upstream, mixed_upstream, or steady_upstream from those rows. status no_station_within_range means no live gauge was found. That is a successful result. It does not mean the river is flat. This is not a routed forecast, not an arrival time, and not the depth at the requested point. Do not invent a stage, a discharge, a direction, or an arrival time.";
+        "Observed river stage and discharge at the nearest gauge with a stored reading, plus upstream gauges on the same river that also have a stored reading. Latitude and longitude are required. Do not pass a place name, a date, or a site id. status ok means a reading was returned. Read gauge.name, observation.gaugeHeight.feet, and observation.gaugeHeight.direction. Those three fields are the reading. Do not say no gauge was returned when status is ok. gauge.distanceMiles is straight-line miles from the requested point to that gauge. gaugeHeight is feet and meters above the gauge datum. discharge is cubic feet per second and cubic meters per second, and may be null. direction is rising, falling, or steady across the stored window. A null direction means one sample. It does not mean steady. upstreamMainstem is nearest first. A gauge with no stored reading is not a row. outlook is rising, falling, or steady when the nearest gauge and the upstream gauges agree. rising_upstream means the nearest gauge is not rising and an upstream gauge is rising. falling_upstream means the nearest gauge is not falling and an upstream gauge is falling. It is not a forecast and does not say when upstream water will arrive. status no_station_within_range means no gauge with a stored reading was inside the search distance. That is a successful empty result. It does not mean the river is flat. Do not invent a stage, a discharge, a direction, or an arrival time.";
 
     private readonly ILogger<GetRiverStageTool> _logger;
     private readonly IRiverStageApiClient _client;
@@ -136,12 +136,19 @@ public sealed class GetRiverStageTool
             payload?["status"]?.ToString(),
             payload?["outlook"]?.ToString());
 
-        return new JsonObject
+        var result = new JsonObject
         {
             ["ok"] = true,
             ["invocationId"] = invocationId,
+            ["status"] = payload?["status"]?.DeepClone(),
+            ["match"] = payload?["match"]?.DeepClone(),
+            ["gauge"] = payload?["gauge"]?.DeepClone(),
+            ["observation"] = payload?["observation"]?.DeepClone(),
+            ["upstreamMainstem"] = payload?["upstreamMainstem"]?.DeepClone(),
+            ["outlook"] = payload?["outlook"]?.DeepClone(),
             ["riverStage"] = payload
         };
+        return result;
     }
 
     private static void StripSite(JsonObject node)

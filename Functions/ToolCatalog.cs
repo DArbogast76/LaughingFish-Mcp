@@ -184,15 +184,15 @@ public static class ToolCatalog
             ["invalid_request", "tide_now_invalid_body", "tide_now_unbound"],
             "/v1/tools/get-tides?latitude=38.9784&longitude=-76.4922"),
         Conditions("get_river_stage", "getRiverStage", RiverStageHttp.Route,
-            "Observed river stage and discharge at the nearest live gauge, plus the next live gauges upstream on the same mainstem. Latitude and longitude are both required. There is no place name, date, or site id. gauge is the nearest gauge with a reading in the last 48 hours. gaugeHeight is feet and meters above the gauge datum. discharge is cubic feet per second and cubic meters per second. direction is rising, falling, or steady. A null direction is not steady. upstreamMainstem skips silent gauges. outlook comes from those upstream rows. This is not a routed forecast and does not give an arrival time.",
+            "Observed river stage and discharge at the nearest gauge with a stored reading, plus upstream gauges on the same river that also have a stored reading. Latitude and longitude are both required. There is no place name, date, or site id. status ok means a reading was returned. gauge.name, observation.gaugeHeight.feet, and observation.gaugeHeight.direction are the reading. gaugeHeight is feet and meters above the gauge datum. discharge may be null. direction is rising, falling, or steady. A null direction is not steady. upstreamMainstem skips gauges with no stored reading. outlook is rising, falling, steady, rising_upstream, or falling_upstream. It is not a forecast and does not give an arrival time.",
             [
                 Input("latitude", true, "number", "-90 to 90.", ["lat"]),
                 Input("longitude", true, "number", "-180 to 180.", ["lon"])
             ],
-            "ok true and the nearest gauge reading, or a null observation when no live gauge was found.",
-            "no_station_within_range means no live gauge was found. That is a successful result, not a failed call, and it does not mean the river is flat.",
+            "ok true, status ok, and gauge, observation, upstreamMainstem, and outlook at the top of the result. riverStage is the full payload.",
+            "no_station_within_range means no gauge with a stored reading was inside the search distance. That is a successful result, not a failed call, and it does not mean the river is flat.",
             ["invalid_request", "river_stage_invalid_body", "river_stage_unbound"],
-            "/v1/tools/get-river-stage?latitude=38.7881&longitude=-90.4976")
+            "/v1/tools/get-river-stage?latitude=38.8906&longitude=-90.1842")
     ];
 
     public static IReadOnlyList<ToolCatalogGap> NotOnHttp { get; } =
