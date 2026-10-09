@@ -84,6 +84,9 @@ public static class McpCacheKeys
     public static string TideNow(double latitude, double longitude) =>
         Format("tidenow", "expl1", Coord(latitude), Coord(longitude));
 
+    public static string RiverStage(double latitude, double longitude) =>
+        Format("river", "expl1", Coord(latitude), Coord(longitude));
+
     public static string SpeciesGuideCatalog() => Format("sg", "species");
 
     public static string SpeciesGuideTopics() => Format("sg", "topics");

@@ -164,7 +164,7 @@ public static class ToolCatalog
             ["invalid_request", "swim_risk_invalid_body", "swim_risk_unbound"],
             "/v1/tools/get-swim-risk?latitude=36.85&longitude=-75.98"),
         Conditions("get_surf_forecast", "getSurfForecast", SurfForecastHttp.Route,
-            "Returns the issued National Weather Service breaking-surf height for a latitude and longitude. A surf-zone forecast, not a measured wave height and not offshore seas. Latitude and longitude are both required. There is no place name, date, or radius. The map search uses 10 miles, then 25 miles only when the smaller search has no issued surf text. source beachSummary means locations has the map zones and surfZoneForecast is null. source surfZoneForecast means the map search was empty and surfZoneForecast.rows has the text segment for the point's forecast zone; locations is empty. A text segment can include every shore in that zone, not one beach. text is the height as issued. minFeet and maxFeet are set only for one height or one simple range. An empty result is not a failed call and not calm water.",
+            "Returns the issued National Weather Service breaking-surf height for a latitude and longitude. A surf-zone forecast, not a measured wave height and not offshore seas. It does not say whether a session is advisable. It does not include wind, rain, rip current risk, tide, water temperature, or observed seas. Latitude and longitude are both required. There is no place name, date, or radius. The map search uses 10 miles, then 25 miles only when the smaller search has no issued surf text. source beachSummary means locations has the map zones and surfZoneForecast is null. source surfZoneForecast means the map search was empty and surfZoneForecast.rows has the text segment for the point's forecast zone; locations is empty. A text segment can include every shore in that zone, not one beach. text is the height as issued. minFeet and maxFeet are set only for one height or one simple range. An empty result is not a failed call and not calm water.",
             [
                 Input("latitude", true, "number", "-90 to 90.", ["lat"]),
                 Input("longitude", true, "number", "-180 to 180.", ["lon"])
@@ -182,7 +182,17 @@ public static class ToolCatalog
             "ok true and the nearest gauge sample, or a null observation when no gauge in range returned a sample.",
             "no_station_within_range means no gauge within 100 miles returned a recent sample. That is a successful result, not a failed call, and it does not mean the water is flat.",
             ["invalid_request", "tide_now_invalid_body", "tide_now_unbound"],
-            "/v1/tools/get-tides?latitude=38.9784&longitude=-76.4922")
+            "/v1/tools/get-tides?latitude=38.9784&longitude=-76.4922"),
+        Conditions("get_river_stage", "getRiverStage", RiverStageHttp.Route,
+            "Observed river stage and discharge at the nearest live gauge, plus the next live gauges upstream on the same mainstem. Latitude and longitude are both required. There is no place name, date, or site id. gauge is the nearest gauge with a reading in the last 48 hours. gaugeHeight is feet and meters above the gauge datum. discharge is cubic feet per second and cubic meters per second. direction is rising, falling, or steady. A null direction is not steady. upstreamMainstem skips silent gauges. outlook comes from those upstream rows. This is not a routed forecast and does not give an arrival time.",
+            [
+                Input("latitude", true, "number", "-90 to 90.", ["lat"]),
+                Input("longitude", true, "number", "-180 to 180.", ["lon"])
+            ],
+            "ok true and the nearest gauge reading, or a null observation when no live gauge was found.",
+            "no_station_within_range means no live gauge was found. That is a successful result, not a failed call, and it does not mean the river is flat.",
+            ["invalid_request", "river_stage_invalid_body", "river_stage_unbound"],
+            "/v1/tools/get-river-stage?latitude=38.7881&longitude=-90.4976")
     ];
 
     public static IReadOnlyList<ToolCatalogGap> NotOnHttp { get; } =

@@ -51,6 +51,8 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.SurfForecastApiAudience = ReadString("SurfForecastApiAudience", options.SurfForecastApiAudience);
         options.TideNowApiBaseUrl = ReadString("TideNowApiBaseUrl", options.TideNowApiBaseUrl);
         options.TideNowApiAudience = ReadString("TideNowApiAudience", options.TideNowApiAudience);
+        options.RiverStageApiBaseUrl = ReadString("RiverStageApiBaseUrl", options.RiverStageApiBaseUrl);
+        options.RiverStageApiAudience = ReadString("RiverStageApiAudience", options.RiverStageApiAudience);
         options.WrecksApiBaseUrl = ReadString("WrecksApiBaseUrl", options.WrecksApiBaseUrl);
         options.WrecksApiAudience = ReadString("WrecksApiAudience", options.WrecksApiAudience);
 
@@ -70,6 +72,7 @@ public sealed class McpOptionsSetup : IConfigureOptions<McpOptions>
         options.SwimRiskCacheTtlSeconds = ReadInt("SwimRiskCacheTtlSeconds", options.SwimRiskCacheTtlSeconds);
         options.SurfForecastCacheTtlSeconds = ReadInt("SurfForecastCacheTtlSeconds", options.SurfForecastCacheTtlSeconds);
         options.TideNowCacheTtlSeconds = ReadInt("TideNowCacheTtlSeconds", options.TideNowCacheTtlSeconds);
+        options.RiverStageCacheTtlSeconds = ReadInt("RiverStageCacheTtlSeconds", options.RiverStageCacheTtlSeconds);
         options.WrecksCacheTtlSeconds = ReadInt("WrecksCacheTtlSeconds", options.WrecksCacheTtlSeconds);
 
         _logger.LogInformation(
