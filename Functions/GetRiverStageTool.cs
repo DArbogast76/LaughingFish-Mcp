@@ -133,8 +133,8 @@ public sealed class GetRiverStageTool
             invocationId,
             latitude.Value.ToString(CultureInfo.InvariantCulture),
             longitude.Value.ToString(CultureInfo.InvariantCulture),
-            payload?["status"]?.GetValue<string>(),
-            payload?["outlook"]?.GetValue<string>());
+            payload?["status"]?.ToString(),
+            payload?["outlook"]?.ToString());
 
         return new JsonObject
         {
