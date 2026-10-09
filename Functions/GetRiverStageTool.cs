@@ -108,22 +108,24 @@ public sealed class GetRiverStageTool
             return Error("river_stage_invalid_body", "River Stage API returned a body that is not JSON.", invocationId);
         }
 
-        if (payload is JsonObject root)
+        if (payload is not JsonObject root)
         {
-            StripSite(root);
-            if (root["gauge"] is JsonObject gauge)
-            {
-                StripSite(gauge);
-            }
+            return Error("river_stage_invalid_body", "River Stage API returned a body that is not an object.", invocationId);
+        }
 
-            if (root["upstreamMainstem"] is JsonArray upstream)
+        StripSite(root);
+        if (root["gauge"] is JsonObject gauge)
+        {
+            StripSite(gauge);
+        }
+
+        if (root["upstreamMainstem"] is JsonArray upstream)
+        {
+            foreach (var item in upstream)
             {
-                foreach (var item in upstream)
+                if (item is JsonObject row)
                 {
-                    if (item is JsonObject row)
-                    {
-                        StripSite(row);
-                    }
+                    StripSite(row);
                 }
             }
         }
@@ -133,23 +135,25 @@ public sealed class GetRiverStageTool
             invocationId,
             latitude.Value.ToString(CultureInfo.InvariantCulture),
             longitude.Value.ToString(CultureInfo.InvariantCulture),
-            payload?["status"]?.ToString(),
-            payload?["outlook"]?.ToString());
+            root["status"]?.ToString(),
+            root["outlook"]?.ToString());
 
-        var result = new JsonObject
+        return new JsonObject
         {
             ["ok"] = true,
             ["invocationId"] = invocationId,
-            ["status"] = payload?["status"]?.DeepClone(),
-            ["match"] = payload?["match"]?.DeepClone(),
-            ["gauge"] = payload?["gauge"]?.DeepClone(),
-            ["observation"] = payload?["observation"]?.DeepClone(),
-            ["upstreamMainstem"] = payload?["upstreamMainstem"]?.DeepClone(),
-            ["outlook"] = payload?["outlook"]?.DeepClone(),
-            ["riverStage"] = payload
+            ["status"] = Copy(root["status"]),
+            ["match"] = Copy(root["match"]),
+            ["gauge"] = Copy(root["gauge"]),
+            ["observation"] = Copy(root["observation"]),
+            ["upstreamMainstem"] = Copy(root["upstreamMainstem"]),
+            ["outlook"] = Copy(root["outlook"]),
+            ["riverStage"] = root
         };
-        return result;
     }
+
+    private static JsonNode? Copy(JsonNode? node) =>
+        node is null ? null : JsonNode.Parse(node.ToJsonString());
 
     private static void StripSite(JsonObject node)
     {

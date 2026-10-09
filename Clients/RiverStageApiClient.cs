@@ -147,10 +147,10 @@ public sealed class RiverStageApiClient : IRiverStageApiClient
             _logger.LogWarning(ex, "River stage client timeout. InvocationId={InvocationId}", invocationId);
             return new RiverStageApiResult(0, null, false, "river_stage_timeout", "River Stage API timed out.");
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(ex, "River stage client transport failure. InvocationId={InvocationId}", invocationId);
-            return new RiverStageApiResult(0, null, false, "river_stage_unreachable", "River Stage API could not be reached.");
+            _logger.LogWarning(ex, "River stage client failed. InvocationId={InvocationId}", invocationId);
+            return new RiverStageApiResult(0, null, false, "river_stage_unreachable", ex.Message);
         }
     }
 

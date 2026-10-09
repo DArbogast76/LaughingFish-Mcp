@@ -65,7 +65,7 @@ public sealed class RiverStageHttp
                 ["ok"] = false,
                 ["invocationId"] = invocationId,
                 ["error"] = "river_stage_failed",
-                ["message"] = "River stage could not be read."
+                ["message"] = ex.Message
             })
             {
                 StatusCode = StatusCodes.Status500InternalServerError
