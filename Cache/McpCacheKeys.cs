@@ -87,6 +87,9 @@ public static class McpCacheKeys
     public static string RiverStage(double latitude, double longitude) =>
         Format("river", "expl1", Coord(latitude), Coord(longitude));
 
+    public static string RiverForecast(double latitude, double longitude, int radiusMiles) =>
+        Format("riverforecast", "expl1", Coord(latitude), Coord(longitude), radiusMiles.ToString(CultureInfo.InvariantCulture));
+
     public static string SpeciesGuideCatalog() => Format("sg", "species");
 
     public static string SpeciesGuideTopics() => Format("sg", "topics");

@@ -38,6 +38,8 @@ public sealed class McpOptions
     public string TideNowApiAudience { get; set; } = string.Empty;
     public string RiverStageApiBaseUrl { get; set; } = string.Empty;
     public string RiverStageApiAudience { get; set; } = string.Empty;
+    public string RiverForecastApiBaseUrl { get; set; } = string.Empty;
+    public string RiverForecastApiAudience { get; set; } = string.Empty;
     public string WrecksApiBaseUrl { get; set; } = string.Empty;
     public string WrecksApiAudience { get; set; } = string.Empty;
     public int PinRecentHours { get; set; } = 48;
@@ -56,6 +58,7 @@ public sealed class McpOptions
     public int SurfForecastCacheTtlSeconds { get; set; } = 3600;
     public int TideNowCacheTtlSeconds { get; set; } = 300;
     public int RiverStageCacheTtlSeconds { get; set; } = 300;
+    public int RiverForecastCacheTtlSeconds { get; set; } = 3600;
     public int WrecksCacheTtlSeconds { get; set; } = 604800;
 
     public bool RedisHostBound => !string.IsNullOrWhiteSpace(RedisHost);
@@ -89,6 +92,8 @@ public sealed class McpOptions
     public bool TideNowApiAudienceBound => !string.IsNullOrWhiteSpace(TideNowApiAudience);
     public bool RiverStageApiBound => !string.IsNullOrWhiteSpace(RiverStageApiBaseUrl);
     public bool RiverStageApiAudienceBound => !string.IsNullOrWhiteSpace(RiverStageApiAudience);
+    public bool RiverForecastApiBound => !string.IsNullOrWhiteSpace(RiverForecastApiBaseUrl);
+    public bool RiverForecastApiAudienceBound => !string.IsNullOrWhiteSpace(RiverForecastApiAudience);
     public bool WrecksApiBound => !string.IsNullOrWhiteSpace(WrecksApiBaseUrl);
     public bool WrecksApiAudienceBound => !string.IsNullOrWhiteSpace(WrecksApiAudience);
 
@@ -106,6 +111,7 @@ public sealed class McpOptions
     public TimeSpan SurfForecastCacheTtl => Ttl(SurfForecastCacheTtlSeconds, 3600);
     public TimeSpan TideNowCacheTtl => Ttl(TideNowCacheTtlSeconds, 300);
     public TimeSpan RiverStageCacheTtl => Ttl(RiverStageCacheTtlSeconds, 300);
+    public TimeSpan RiverForecastCacheTtl => Ttl(RiverForecastCacheTtlSeconds, 3600);
     public TimeSpan WrecksCacheTtl => Ttl(WrecksCacheTtlSeconds, 604800);
     public TimeSpan DefaultCacheTtl => Ttl(CacheDefaultTtlSeconds, 3600);
 

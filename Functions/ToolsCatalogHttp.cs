@@ -42,7 +42,7 @@ public sealed class ToolsCatalogHttp
                 ok = true,
                 schema = ToolCatalog.Schema,
                 invocationId,
-                catalogVersion = "11",
+                catalogVersion = "12",
                 path = ToolCatalog.Path,
                 toolCount = tools.Length,
                 calling = new

@@ -192,7 +192,18 @@ public static class ToolCatalog
             "ok true, status ok, and gauge, observation, upstreamMainstem, and outlook at the top of the result. riverStage is the full payload.",
             "no_station_within_range means no gauge with a stored reading was inside the search distance. That is a successful result, not a failed call, and it does not mean the river is flat.",
             ["invalid_request", "river_stage_invalid_body", "river_stage_unbound"],
-            "/v1/tools/get-river-stage?latitude=38.8906&longitude=-90.1842")
+            "/v1/tools/get-river-stage?latitude=38.8906&longitude=-90.1842"),
+        Conditions("get_river_forecast", "getRiverForecast", RiverForecastHttp.Route,
+            "Ten-day modeled streamflow forecast for the nearest National Water Model reach linked to a gauge near the point. Latitude and longitude are both required. radiusMiles is optional and must be 10, 25, or 50; omit it for 25. daily has ten calendar days starting from the current UTC date, including today, with mean and peak flow. hourly is the first 72 hours of the ensemble mean. Every flow value is in cubic feet per second and cubic meters per second. This is model guidance, not a measured reading and not an official forecast.",
+            [
+                Input("latitude", true, "number", "-90 to 90.", ["lat"]),
+                Input("longitude", true, "number", "-180 to 180.", ["lon"]),
+                Input("radiusMiles", false, "integer", "10, 25, or 50. Omit for 25.", ["radius"])
+            ],
+            "ok true and the nearest linked reach with daily and hourly flow.",
+            "no_reach_within_range means no linked reach was inside the radius. no_forecast_for_reach means a reach was found but the series was empty. Both are successful results, not failed calls.",
+            ["invalid_request", "river_forecast_invalid_body", "river_forecast_unbound"],
+            "/v1/tools/get-river-forecast?latitude=38.9784&longitude=-76.4922")
     ];
 
     public static IReadOnlyList<ToolCatalogGap> NotOnHttp { get; } =
