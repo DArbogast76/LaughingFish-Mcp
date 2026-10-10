@@ -31,6 +31,7 @@ public sealed class RiverForecastApiClient : IRiverForecastApiClient
     {
         _http = http;
         _options = options.Value;
+        _cache = cache;
         _logger = logger;
         _http.Timeout = TimeSpan.FromSeconds(90);
         _http.DefaultRequestHeaders.UserAgent.Clear();
