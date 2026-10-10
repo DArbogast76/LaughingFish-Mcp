@@ -3,8 +3,8 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using LaughingFish.Mcp.Clients;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Extensions.Mcp;
 using Microsoft.Extensions.Logging;
-using ModelContextProtocol.Server;
 
 namespace LaughingFish.Mcp.Functions;
 
